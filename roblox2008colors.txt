@@ -1,0 +1,38 @@
+White: 				1, (242, 243, 242)				
+BrickYellow: 		5, (215, 197, 153) 
+LightReddishViolet: 9, (232, 186, 199)
+PastelBlue: 		11, (128, 187, 219)
+Nougat: 			18, (204, 142, 104)
+BrightRed: 			21, (196, 40, 27)
+BrightBlue: 		23, (13, 105, 171)
+BrightYellow: 		24, (245, 205, 47)
+Black: 				26, (27, 42, 52)
+DarkGreen: 			28, (40, 127, 70)
+MediumGreen: 		29, (161, 196, 139)
+BrightGreen: 		37, (75, 151, 74)
+DarkOrange: 		38, (160, 95, 52)
+LightBlue: 			45, (180, 210, 227)
+
+MediumRed: 				101, (218, 134, 121)
+MediumBlue: 			102, (110, 153, 201)
+BrightViolet: 			104, (107, 50, 123)
+BrightYellowishOrange: 	105, (226, 155, 63)
+BrightOrange: 			106, (218, 133, 64)
+BrightBluishGreen: 		107, (0, 143, 155)
+BrightYellowishGreen: 	119, (164, 189, 70)
+LightOrange: 			125, (234, 184, 145)
+SandBlue: 				135, (116, 134, 156)
+
+EarthGreen: 			141, (39, 70, 44)
+SandGreen: 				151, (120, 144, 129)
+SandRed: 				153, (149, 121, 118)
+ReddishBrown: 			192, (105, 64, 39)
+MediumStoneGrey: 		194, (163, 162, 164)
+DarkStoneGrey: 			199, (99, 95, 97)
+LightStoneGrey: 		208, (229, 228, 222)
+Brown: 					217, (124, 92, 69)
+CoolYellow: 			226, (253, 234, 140)
+
+
+
+
