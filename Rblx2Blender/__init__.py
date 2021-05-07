@@ -12,7 +12,7 @@
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 bl_info = {
-    "name" : "Rblx To Blender",
+    "name" : "Rblx2Blender",
     "author" : "mallgrab",
     "description" : "",
     "blender" : (2, 80, 0),
@@ -27,7 +27,7 @@ import bpy
 from . rblx_pnl import RBLX_PT_Panel
 from . rblx_pnl import RBLX_Place_Path
 from . rblx_pnl import RBLX_Install_Path
-from . rblx_pnl import StartConverting
+from . rblx_convert import StartConverting
 from . rblx_pnl import TestCheckBox
 
 classes = (RBLX_PT_Panel, RBLX_Place_Path, RBLX_Install_Path, StartConverting, TestCheckBox)

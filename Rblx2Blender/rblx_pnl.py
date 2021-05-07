@@ -24,14 +24,6 @@ class RBLX_Install_Path(bpy.types.PropertyGroup):
 class TestCheckBox(bpy.types.PropertyGroup):
     checkbox_bool: bpy.props.BoolProperty(name="A checkbox", description="Do this or that", default = False)
 
-class StartConverting(bpy.types.Operator):
-    bl_idname = "scene.button_operator_convert"
-    bl_label = "Start Converting"
-
-    def execute(self, context):
-        print("Pressed button", PlacePath.file_path, InstallPath.file_path)
-        return {'FINISHED'}
-
 class RBLX_PT_Panel(Panel):
     bl_space_type = "VIEW_3D"
     bl_region_type = "UI"
