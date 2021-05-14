@@ -131,3 +131,5 @@ dmypy.json
 # From downloading assets
 *.png
 *.jpeg
+*.rbxl
+*.rbxlx
