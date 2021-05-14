@@ -2,18 +2,16 @@ from copy import deepcopy
 from math import radians, degrees
 
 import xml.etree.ElementTree as ET
-import numpy as np 
-import math
 import mathutils
 import bmesh
 import bpy
-import signal
-import io
 import os
 import base64
+import hashlib
 import requests
 import imghdr
 import re
+import shutil
 from . rblx_legacy_color import BrickColor
 
 # debug
@@ -27,37 +25,53 @@ class Part(object):
         self.scale = [0.0, 0.0, 0.0]
         self.brickColor = 0
         self.brickType = 0
-        self.surface = []
-        self.texID = 0
+        self.textures = []
+        self.md5Textures = []
+        self.decals = []
 
 PartsList = []
 BrickList = []
 CylinderList = []
 SphereList = []
 
+# Contains path of all textures
+TextureList = []
+
 CurrentPart = [[0.0, 0.0, 0.0],[0.0, 0.0, 0.0],[0.0, 0.0, 0.0],[0],[0],["",""]]
 CurrentDecals = []
 RotationMatrix = mathutils.Matrix(([0,0,0],[0,0,0],[0,0,0]))
 base64Buffer = ""
-texID = 0
+localTexId = 0
 rbxlx = False
 
 bpyscene = ""
 dobjects = ""
 objects = ""
 
-def CalculateRotation(PartIdx):
+RobloxPlace = ""
+RobloxInstallLocation = ""
+PlaceName = ""
+AssetsDir = ""
+
+def CalculateRotation(CurrentPart):
     EulerVector3 = RotationMatrix.to_euler("XYZ")
 
-    PartsList[PartIdx].rotation[0] = EulerVector3[0]
-    PartsList[PartIdx].rotation[1] = EulerVector3[1]
-    PartsList[PartIdx].rotation[2] = EulerVector3[2]
+    CurrentPart.rotation[0] = EulerVector3[0]
+    CurrentPart.rotation[1] = EulerVector3[1]
+    CurrentPart.rotation[2] = EulerVector3[2]
 
 def srgb2linear(c):
     if c < 0.04045:
         return 0.0 if c < 0.0 else c * (1.0 / 12.92)
     else:
         return ((c + 0.055) * (1.0 / 1.055)) ** 2.4
+
+def md5(fname):
+    hash_md5 = hashlib.md5()
+    with open(fname, "rb") as f:
+        for chunk in iter(lambda: f.read(4096), b""):
+            hash_md5.update(chunk)
+    return hash_md5.hexdigest()
 
 def CreateMaterial(r, g, b):
     for i in bpy.data.materials:
@@ -84,26 +98,41 @@ def CreateMaterialFromBrickColor(colorID):
         print("BrickColor", colorID, "is not defined")
         return CreateMaterial(0, 0, 0)
 
+# Local texture which got duplicated. Uses md5 hash for the texture.
+def TextureDuplicated(TextureMd5, FaceIdx, Part):
+    Part.md5Textures.append([TextureMd5, FaceIdx])
+
 # On both functions return file location and face direction
-def GetLocalTexture(TextureXML):
-    global texID
+def GetLocalTexture(TextureXML, FaceIdx, Part):
+    global localTexId
     base64buffer = TextureXML.text
     base64buffer = base64buffer.replace('\n', '')
     file_content = base64.b64decode(base64buffer)
 
+    if not (os.path.exists(AssetsDir)):
+        os.mkdir(AssetsDir)
+
     open("tmp", 'wb').write(file_content)
     assetType = imghdr.what('tmp')
-    textureName = "tex_" + str(texID) + "." + str(assetType)
+    textureName = "tex_" + str(localTexId) + "." + str(assetType)
 
-    if (os.path.exists(textureName)):
-        os.remove(textureName)
+    if (os.path.exists(AssetsDir + "/" + textureName)):
+        os.remove(AssetsDir + "/" + textureName)
+
     os.rename(r'tmp',r'' + textureName)
+    shutil.move(textureName, AssetsDir)
 
-    texID += 1
+    textureDir = os.path.abspath(AssetsDir + "/" + textureName)
+    Part.textures.append([textureDir, FaceIdx])
+    localTexId += 1
+    
 
-def GetOnlineTexture(Link):
+def GetOnlineTexture(Link, FaceIdx, Part):
     assetID = re.sub(r'[^0-9]+', '', Link.lower())
     localAsset = False
+
+    if not (os.path.exists(PlaceName + "Assets")):
+        os.mkdir(PlaceName + "Assets")
 
     # Check if what we return would even work as a file link for blender
     # Might have to reformat it a little bit so it works cause of backslashes
@@ -113,10 +142,10 @@ def GetOnlineTexture(Link):
             localAsset = True
 
     if not (localAsset):
-        if (os.path.exists(assetID + ".png")):
-            os.remove(assetID + ".png")
-        elif (os.path.exists(assetID + ".jpeg")):
-            os.remove(assetID + ".jpeg")
+        if (os.path.exists(AssetsDir + "/" + assetID + ".png")):
+            os.remove(AssetsDir + "/" + assetID + ".png")
+        elif (os.path.exists(AssetsDir + "/" + assetID + ".jpeg")):
+            os.remove(AssetsDir + "/" + assetID + ".jpeg")
         
         if not (os.path.exists(assetID + ".png") or os.path.exists(assetID + ".jpeg")):
             asset = requests.get('https://assetdelivery.roblox.com/v1/assetId/' + assetID)
@@ -125,7 +154,11 @@ def GetOnlineTexture(Link):
             assetFile = requests.get(assetLink, allow_redirects=True)
             open('tmp', 'wb').write(assetFile.content)
             assetType = imghdr.what('tmp')
-            os.rename(r'tmp',r'' + assetID + "." + str(assetType))
+            assetFileName = assetID + "." + str(assetType)
+            os.rename(r'tmp',r'' + assetFileName)
+            shutil.move(assetFileName, AssetsDir)
+            textureDir = os.path.abspath(AssetsDir + "/" + assetFileName)
+            Part.textures.append([textureDir, FaceIdx])
 
 def CreatePart(scale, rotation, translate, brickcolor, type):
     if (type == 2):
@@ -216,52 +249,57 @@ def CreatePart(scale, rotation, translate, brickcolor, type):
         basic_sphere.data.materials.append(CreateMaterialFromBrickColor(brickcolor))
         bpy.ops.object.shade_smooth()
 
-# Group stuff later on depending on if they are inside models.
-# Check also if fbx supports exporting groups so that in unity you can move stuff easier
+# Create material in blender from TextureList
+# Edit face uv depending on if its a decal or texture
+# While face is selected assign it the material
 
-# We also not checking for transparency which we should do later.
-# Check also if unity will transparent the object if the material is transparent.
+# Group stuff later on depending on if they are inside models.
+    # Group support for fbx does not exist, but with blender we could create either collections or join parts.
+
+# We are also not checking for transparency which we should do later.
+    # Check also if unity will transparent the object if the material is transparent.
 
 def GetDataFromPlace(root):
     global PartsList
     global CylinderList
     global BrickList
     global SphereList
+    global TextureList
 
     PartsList = []
     CylinderList = []
     BrickList = []
     SphereList = []
-
-    PartIdx = 0
+    TextureList = []
 
     for DataModel in root:
         if (DataModel.get('class') == 'Workspace'):
             for Workspace in DataModel.iter('Item'):
                 if (Workspace.get('class') == 'Part'):
-                    PartsList.append(Part())
+                    CurrentPart = Part()
+                    PartsList.append(CurrentPart)
 
                     for Parts in Workspace.iter('Properties'):
                         for Properties in Parts.iter():
                             if (rbxlx):
                                 if (Properties.tag == 'Color3uint8'):
                                     if (Properties.attrib.get('name') == 'Color3uint8'):
-                                        PartsList[PartIdx].brickColor = int(Properties.text)
+                                        CurrentPart.brickColor = int(Properties.text)
                             else:
                                 if (Properties.tag == 'int'):
                                     if (Properties.attrib.get('name') == 'BrickColor'):
-                                        PartsList[PartIdx].brickColor = int(Properties.text)
+                                        CurrentPart.brickColor = int(Properties.text)
 
                             if (Properties.tag == 'token'):
                                 if (Properties.attrib.get('name') == 'shape'):
-                                    PartsList[PartIdx].brickType = int(Properties.text)
+                                    CurrentPart.brickType = int(Properties.text)
 
                             if (Properties.tag == 'CoordinateFrame'):
                                 if (Properties.attrib.get('name') == 'CFrame'):
                                     for Pos in Properties.iter():
-                                        if (Pos.tag == 'X'): PartsList[PartIdx].location[0] = float(Pos.text)
-                                        if (Pos.tag == 'Y'): PartsList[PartIdx].location[1] = float(Pos.text)
-                                        if (Pos.tag == 'Z'): PartsList[PartIdx].location[2] = float(Pos.text)
+                                        if (Pos.tag == 'X'): CurrentPart.location[0] = float(Pos.text)
+                                        if (Pos.tag == 'Y'): CurrentPart.location[1] = float(Pos.text)
+                                        if (Pos.tag == 'Z'): CurrentPart.location[2] = float(Pos.text)
 
                                         if (Pos.tag == 'R00'): 
                                             RotationMatrix[0][0] = float(Pos.text)
@@ -286,44 +324,55 @@ def GetDataFromPlace(root):
                                 if (Properties.attrib.get('name') == 'size'):
                                     for Pos in Properties.iter():
                                         if (Pos.tag == 'X'): 
-                                            PartsList[PartIdx].scale[0] = float(Pos.text)
+                                            CurrentPart.scale[0] = float(Pos.text)
                                         if (Pos.tag == 'Y'): 
-                                            PartsList[PartIdx].scale[1] = float(Pos.text)
+                                            CurrentPart.scale[1] = float(Pos.text)
                                         if (Pos.tag == 'Z'): 
-                                            PartsList[PartIdx].scale[2] = float(Pos.text)
-                                            CalculateRotation(PartIdx)
-                                            PartIdx += 1            
+                                            CurrentPart.scale[2] = float(Pos.text)
+                                            CalculateRotation(CurrentPart)
+         
                     for Items in Workspace.iter('Item'):
                         if (Items.get('class') == 'Decal'):
                             if (Workspace.attrib.get('class') == 'Part'):
-                                for Decal in Items.iter():      
+                                for Decal in Items.iter():   
+                                    if (Decal.tag == 'token'):
+                                        if (Decal.attrib.get('name') == 'Face'):
+                                            FaceIdx = int(Decal.text)   
                                     if (Decal.tag == 'hash' or Decal.tag == 'url'):
-                                        GetOnlineTexture(Decal.text)            
+                                        GetOnlineTexture(Decal.text, FaceIdx, CurrentPart)            
                                     if (Decal.tag == 'binary'):
-                                        GetLocalTexture(Decal)
+                                        GetLocalTexture(Decal, FaceIdx, CurrentPart)
 
                         if (Items.get('class') == 'Texture'):
                             if (Workspace.attrib.get('class') == 'Part'):
                                 for Texture in Items.iter():
-                                    if (Texture.tag == 'float'):
-                                        if (Texture.attrib.get('name') == 'StudsPerTileU'):
-                                            print("StudsPerTileU: " + Texture.text)
-                                        if (Texture.attrib.get('name') == 'StudsPerTileV'):
-                                            print("StudsPerTileV: " + Texture.text)
+                                    if (Texture.tag == 'token'):
+                                        if (Texture.attrib.get('name') == 'Face'):
+                                            FaceIdx = int(Texture.text)
+                                    if (Texture.tag == 'hash'):
+                                        TextureDuplicated(Texture.text, FaceIdx, CurrentPart)
+                                    #if (Texture.tag == 'float'):
+                                        #if (Texture.attrib.get('name') == 'StudsPerTileU'):
+                                        #    print("StudsPerTileU: " + Texture.text)
+                                        #if (Texture.attrib.get('name') == 'StudsPerTileV'):
+                                        #    print("StudsPerTileV: " + Texture.text)
                                     if (Texture.tag == 'binary'):
-                                        GetLocalTexture(Texture)
+                                        GetLocalTexture(Texture, FaceIdx, CurrentPart)
 
 class StartConverting(bpy.types.Operator):
     bl_idname = "scene.button_operator_convert"
     bl_label = "Start Converting"
-
-    #root = ET.parse(RobloxPlace).getroot()
 
     def execute(self, context):
         global bpyscene
         global dobjects
         global objects
         global rbxlx
+        global RobloxPlace
+        global RobloxInstallLocation
+        global PlaceName
+        global AssetsDir
+        global localTexId
 
         bpyscene = context.scene
         dobjects = bpy.data.objects
@@ -331,6 +380,9 @@ class StartConverting(bpy.types.Operator):
 
         RobloxPlace = bpyscene.Place_Path.file_path
         RobloxInstallLocation = bpyscene.Install_Path.file_path
+        PlaceName = os.path.splitext(os.path.basename(RobloxPlace))[0]
+        AssetsDir = PlaceName + "Assets"
+        localTexId = 0
         
         rbxlx = RobloxPlace.lower().endswith(('rbxlx'))
         root = ET.parse(RobloxPlace).getroot()
@@ -346,6 +398,19 @@ class StartConverting(bpy.types.Operator):
             bpy.data.meshes.remove(i)
 
         GetDataFromPlace(root)
+
+        for i in os.listdir(AssetsDir):
+            TextureList.append(os.path.abspath(AssetsDir + "/" + i))
+
+        # Convert md5 hash to the texture path
+        for i in PartsList:
+            for v in i.md5Textures:
+                md5Texture = v[0]
+                for TexturePath in TextureList:
+                    if(md5(TexturePath) == md5Texture):
+                        # Change md5 hash to texture path
+                        v[0] = TexturePath
+                        i.textures.append(v)
 
         for i in PartsList:
             CreatePart(i.scale, i.rotation, i.location, i.brickColor, i.brickType)
