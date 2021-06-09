@@ -250,14 +250,21 @@ def CreatePart(scale, rotation, translate, brickcolor, type):
         bpy.ops.object.shade_smooth()
 
 # Create material in blender from TextureList
-# Edit face uv depending on if its a decal or texture
-# While face is selected assign it the material
+    # Edit face uv depending on if its a decal or texture
+    # While face is selected assign it the material
+
+# Check if brick contains mesh.
+    # Only care about the first mesh that we get.
+        # Download mesh (asset).
+        # If mesh uses texture
+            # Download texture.
+            # Apply texture to the mesh. (mesh should have proper uv's already.)
 
 # Group stuff later on depending on if they are inside models.
     # Group support for fbx does not exist, but with blender we could create either collections or join parts.
 
-# We are also not checking for transparency which we should do later.
-    # Check also if unity will transparent the object if the material is transparent.
+# Check if part uses transparency.
+    # If true change alpha on the material so its roughly the same as ingame.
 
 def GetDataFromPlace(root):
     global PartsList
