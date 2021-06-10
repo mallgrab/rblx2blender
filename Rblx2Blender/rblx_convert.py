@@ -83,6 +83,24 @@ def CreateMaterial(r, g, b):
     mat.diffuse_color=(srgb2linear(r/255), srgb2linear(g/255), srgb2linear(b/255), 1.0)
     return mat
 
+# Check if brick contains texture
+    # If true check what sides have textures
+        # Apply texture to the side.
+def CreateMaterialWithTexture(dir):
+    for material in bpy.data.materials:
+        matName = "Tex" + os.path.basename(dir)
+        if (material.name == matName):
+            return material
+    
+    mat = bpy.data.materials.new(name="Tex" + os.path.basename(dir))
+    mat.use_nodes = True
+    mat.diffuse_color=(srgb2linear(255/255), srgb2linear(0/255), srgb2linear(255/255), 1.0)
+    bsdf = mat.node_tree.nodes["Principled BSDF"]
+    texImage = mat.node_tree.nodes.new('ShaderNodeTexImage')
+    texImage.image = bpy.data.images.load(dir)
+    mat.node_tree.links.new(bsdf.inputs['Base Color'], texImage.outputs['Color'])
+    return mat
+
 def CreateMaterialFromBrickColor(colorID):
     if (rbxlx):
         # brickcolor is a 32 integer
