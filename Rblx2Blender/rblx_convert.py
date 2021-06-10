@@ -162,7 +162,8 @@ def GetOnlineTexture(Link, FaceIdx, Part):
     if not (localAsset):
         if (os.path.exists(AssetsDir + "/" + assetID + ".png")):
             os.remove(AssetsDir + "/" + assetID + ".png")
-        elif (os.path.exists(AssetsDir + "/" + assetID + ".jpeg")):
+        
+        if (os.path.exists(AssetsDir + "/" + assetID + ".jpeg")):
             os.remove(AssetsDir + "/" + assetID + ".jpeg")
         
         if not (os.path.exists(assetID + ".png") or os.path.exists(assetID + ".jpeg")):
@@ -242,6 +243,8 @@ def CreatePart(scale, rotation, translate, brickcolor, type):
         basic_brick.select_set(False)
 
         global BrickList
+        
+        # Add material name & side
         BrickList.append([mesh, scale])
         
     if (type == 0):
@@ -422,10 +425,16 @@ class StartConverting(bpy.types.Operator):
         for i in bpy.data.meshes:
             bpy.data.meshes.remove(i)
 
+        for i in bpy.data.materials:
+            bpy.data.materials.remove(i)
+
         GetDataFromPlace(root)
 
-        for i in os.listdir(AssetsDir):
-            TextureList.append(os.path.abspath(AssetsDir + "/" + i))
+        # If place has textures fill up TextureList.
+        if (os.path.exists(AssetsDir)):
+            for i in os.listdir(AssetsDir):
+                TextureList.append(os.path.abspath(AssetsDir + "/" + i))
+                TextureList.append(CreateMaterialWithTexture(AssetsDir + "/" + i))
 
         # Convert md5 hash to the texture path
         for i in PartsList:
@@ -486,9 +495,12 @@ class StartConverting(bpy.types.Operator):
                 scale = mesh[1]
 
                 # top and bottom of brick gets their UV stretched, creates tiling for the studs.
-                # mesh[0] is the blender mesh
-                # mesh[1] is the scale from roblox
                 for idxFace, face in enumerate(bm.faces):
+                    # Check if part contains textures
+                    # If true select face
+                        # Apply material to face
+                        # Deselect
+                    
                     for idxLoop, loop in enumerate(bm.faces[idxFace].loops):
                         loop_uv = loop[uv_layer]
                         if (idxFace == 1 or idxFace == 3):
