@@ -38,7 +38,6 @@ SphereList = []
 TextureList = []
 
 CurrentPart = [[0.0, 0.0, 0.0],[0.0, 0.0, 0.0],[0.0, 0.0, 0.0],[0],[0],["",""]]
-CurrentDecals = []
 RotationMatrix = mathutils.Matrix(([0,0,0],[0,0,0],[0,0,0]))
 base64Buffer = ""
 localTexId = 0
@@ -121,7 +120,7 @@ def TextureDuplicated(TextureMd5, FaceIdx, Part):
     Part.md5Textures.append([TextureMd5, FaceIdx])
 
 # On both functions return file location and face direction
-def GetLocalTexture(TextureXML, FaceIdx, Part):
+def GetLocalTexture(TextureXML, FaceIdx, Part, Type):
     global localTexId
     base64buffer = TextureXML.text
     base64buffer = base64buffer.replace('\n', '')
@@ -141,11 +140,11 @@ def GetLocalTexture(TextureXML, FaceIdx, Part):
     shutil.move(textureName, AssetsDir)
 
     textureDir = os.path.abspath(AssetsDir + "/" + textureName)
-    Part.textures.append([textureDir, FaceIdx])
+    Part.textures.append([textureDir, FaceIdx, Type])
     localTexId += 1
     
 
-def GetOnlineTexture(Link, FaceIdx, Part):
+def GetOnlineTexture(Link, FaceIdx, Part, Type):
     assetID = re.sub(r'[^0-9]+', '', Link.lower())
     localAsset = False
 
@@ -177,9 +176,9 @@ def GetOnlineTexture(Link, FaceIdx, Part):
             os.rename(r'tmp',r'' + assetFileName)
             shutil.move(assetFileName, AssetsDir)
             textureDir = os.path.abspath(AssetsDir + "/" + assetFileName)
-            Part.textures.append([textureDir, FaceIdx])
+            Part.textures.append([textureDir, FaceIdx, Type])
 
-def CreatePart(scale, rotation, translate, brickcolor, type):
+def CreatePart(scale, rotation, translate, brickcolor, type, textures):
     if (type == 2):
         mesh = bpy.data.meshes.new('Part_Cylinder')
         basic_cylinder = bpy.data.objects.new("Part_Cylinder", mesh)
@@ -245,7 +244,7 @@ def CreatePart(scale, rotation, translate, brickcolor, type):
         global BrickList
         
         # Add material name & side
-        BrickList.append([mesh, scale])
+        BrickList.append([mesh, scale, textures])
         
     if (type == 0):
         mesh = bpy.data.meshes.new('Part_Sphere')
@@ -367,9 +366,9 @@ def GetDataFromPlace(root):
                                         if (Decal.attrib.get('name') == 'Face'):
                                             FaceIdx = int(Decal.text)   
                                     if (Decal.tag == 'hash' or Decal.tag == 'url'):
-                                        GetOnlineTexture(Decal.text, FaceIdx, CurrentPart)            
+                                        GetOnlineTexture(Decal.text, FaceIdx, CurrentPart, 'Decal')            
                                     if (Decal.tag == 'binary'):
-                                        GetLocalTexture(Decal, FaceIdx, CurrentPart)
+                                        GetLocalTexture(Decal, FaceIdx, CurrentPart, 'Decal')
 
                         if (Items.get('class') == 'Texture'):
                             if (Workspace.attrib.get('class') == 'Part'):
@@ -385,7 +384,7 @@ def GetDataFromPlace(root):
                                         #if (Texture.attrib.get('name') == 'StudsPerTileV'):
                                         #    print("StudsPerTileV: " + Texture.text)
                                     if (Texture.tag == 'binary'):
-                                        GetLocalTexture(Texture, FaceIdx, CurrentPart)
+                                        GetLocalTexture(Texture, FaceIdx, CurrentPart, 'Texture')
 
 class StartConverting(bpy.types.Operator):
     bl_idname = "scene.button_operator_convert"
@@ -446,8 +445,8 @@ class StartConverting(bpy.types.Operator):
                         v[0] = TexturePath
                         i.textures.append(v)
 
-        for i in PartsList:
-            CreatePart(i.scale, i.rotation, i.location, i.brickColor, i.brickType)
+        for Part in PartsList:
+            CreatePart(Part.scale, Part.rotation, Part.location, Part.brickColor, Part.brickType, Part.textures)
 
         for obj in bpy.context.scene.objects:
             obj.select_set(True)
@@ -485,14 +484,15 @@ class StartConverting(bpy.types.Operator):
         bpy.ops.object.mode_set(mode='OBJECT')
 
         if BrickList:
-            for mesh in BrickList:
+            for brick in BrickList:
+                mesh = brick[0]
+                scale = brick[1]
+
                 bm = bmesh.new()
-                bm.from_mesh(mesh[0])
+                bm.from_mesh(mesh)
                 uv_layer = bm.loops.layers.uv.verify()
                 bm.faces.ensure_lookup_table()
 
-                _mesh = mesh[0]
-                scale = mesh[1]
 
                 # top and bottom of brick gets their UV stretched, creates tiling for the studs.
                 for idxFace, face in enumerate(bm.faces):
@@ -512,7 +512,7 @@ class StartConverting(bpy.types.Operator):
                                 loop_uv.uv = [0.0, 0.0]                     # bottom left
                             if (idxLoop == 3):
                                 loop_uv.uv = [(scale[2]/2), 0.0]            # bottom right
-                bm.to_mesh(_mesh)
+                bm.to_mesh(mesh)
 
 
         """ Roblox does some funny shit to the UV's on the sides, this looks 'ok' but its not the same as it does in Roblox.
