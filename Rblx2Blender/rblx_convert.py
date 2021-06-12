@@ -82,9 +82,6 @@ def CreateMaterial(r, g, b):
     mat.diffuse_color=(srgb2linear(r/255), srgb2linear(g/255), srgb2linear(b/255), 1.0)
     return mat
 
-# Check if brick contains texture
-    # If true check what sides have textures
-        # Apply texture to the side.
 def CreateMaterialWithTexture(dir):
     for material in bpy.data.materials:
         matName = "Tex" + os.path.basename(dir)
@@ -242,8 +239,6 @@ def CreatePart(scale, rotation, translate, brickcolor, type, textures):
         basic_brick.select_set(False)
 
         global BrickList
-        
-        # Add material name & side
         BrickList.append([mesh, scale, textures])
         
     if (type == 0):
@@ -263,6 +258,8 @@ def CreatePart(scale, rotation, translate, brickcolor, type, textures):
         
         # add smooth modifier to sphere
         # would be faster if done all at once since it updates the scene per sphere
+            # we could add spheres to a list then just select all of them and apply smooth modifier to them.
+            # would be one single scene update
         bpy.context.view_layer.objects.active = basic_sphere
         basic_sphere.select_set(True)
         bpy.ops.object.modifier_add(type='SUBSURF')
@@ -361,11 +358,14 @@ def GetDataFromPlace(root):
                                             FaceIdx = int(Texture.text)
                                     if (Texture.tag == 'hash'):
                                         TextureDuplicated(Texture.text, FaceIdx, CurrentPart)
-                                    #if (Texture.tag == 'float'):
-                                        #if (Texture.attrib.get('name') == 'StudsPerTileU'):
-                                        #    print("StudsPerTileU: " + Texture.text)
-                                        #if (Texture.attrib.get('name') == 'StudsPerTileV'):
-                                        #    print("StudsPerTileV: " + Texture.text)
+                                    # We will use this later for now we assume every texture uses default values.                                    
+                                    """
+                                    if (Texture.tag == 'float'):
+                                        if (Texture.attrib.get('name') == 'StudsPerTileU'):
+                                            print("StudsPerTileU: " + Texture.text)
+                                        if (Texture.attrib.get('name') == 'StudsPerTileV'):
+                                            print("StudsPerTileV: " + Texture.text)
+                                    """
                                     if (Texture.tag == 'binary'):
                                         GetLocalTexture(Texture, FaceIdx, CurrentPart, 'Texture')
 
@@ -454,16 +454,17 @@ class StartConverting(bpy.types.Operator):
             obj.select_set(False)
 
         """
-            UV:
-            By default set vertex to each corner after cube_project().
+        UV:
+        By default set vertex to each corner after cube_project().
 
-            If a decal is placed on a specific surface on the brick.
-            Do not do anything on that particular surface.
+        If a decal is placed on a specific surface on the brick.
+        Do not do anything on that particular surface.
 
-            If theres no decal on a specific surface.
-            Increase UV width/height by surface size.
-            This will repeat the stud pattern.
+        If theres no decal on a specific surface.
+        Increase UV width/height by surface size.
+        This will repeat the stud pattern.
         """
+
         bpy.ops.object.mode_set(mode='OBJECT')
 
         if BrickList:
@@ -498,7 +499,7 @@ class StartConverting(bpy.types.Operator):
                 bm.to_mesh(mesh)
 
 
-        """ Roblox does some funny shit to the UV's on the sides, this looks 'ok' but its not the same as it does in Roblox.
+        """ Roblox does some funny shit to the UV's on the sides, this looks 'ok' but its not the same as in Roblox.
                 if (idxFace == 4 or idxFace == 5):
                     if (idxLoop == 0):
                         loop_uv.uv = [scale[0]/2, scale[1]/4]   # top right
