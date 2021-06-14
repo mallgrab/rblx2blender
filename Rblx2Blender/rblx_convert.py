@@ -112,6 +112,19 @@ def CreateMaterialFromBrickColor(colorID):
         print("BrickColor", colorID, "is not defined")
         return CreateMaterial(0, 0, 0)
 
+# Returns material index if the material name is the same.
+def GetMaterialIndex(dir, mesh):
+    for idx, i in enumerate(mesh.materials):
+        if (i.name == "Tex" + os.path.basename(dir)):
+            print(i)
+            return idx
+
+    # Material does not exist within Part
+    mesh.materials.append(CreateMaterialWithTexture(dir))
+    return 0
+
+
+
 # Local texture which got duplicated. Uses md5 hash for the texture.
 def TextureDuplicated(TextureMd5, FaceIdx, Part):
     Part.md5Textures.append([TextureMd5, FaceIdx])
@@ -416,7 +429,6 @@ class StartConverting(bpy.types.Operator):
         if (os.path.exists(AssetsDir)):
             for i in os.listdir(AssetsDir):
                 TextureList.append(os.path.abspath(AssetsDir + "/" + i))
-                TextureList.append(CreateMaterialWithTexture(AssetsDir + "/" + i))
 
         # Convert md5 hash to the texture path
         for i in PartsList:
@@ -500,18 +512,34 @@ class StartConverting(bpy.types.Operator):
                     
                         # vertices need to get rotated by 90 degrees
                         # a.k.a we are putting the vertices in the wrong corners just mess around until its roughly 90
-                        for i in textures:                            
+                        for i in textures:
+                            if (i[1] == idxFace):
+                                face.material_index = GetMaterialIndex(i[0], mesh)
+
                             if (i[1] == idxFace):
                                 if (i[2] == 'Decal'):
                                     loop_uv = loop[uv_layer]
                                     if (idxLoop == 0):
-                                        loop_uv.uv = [1.0, 1.0]       # top right
+                                        loop_uv.uv = [1.0, 0.0]       # bottom left
                                     if (idxLoop == 1):
-                                        loop_uv.uv = [0.0, 1.0]              # top left
+                                        loop_uv.uv = [1.0, 1.0]       # top left
                                     if (idxLoop == 2):
-                                        loop_uv.uv = [0.0, 0.0]                     # bottom left
+                                        loop_uv.uv = [0.0, 1.0]       # top right
                                     if (idxLoop == 3):
-                                        loop_uv.uv = [1.0, 0.0]            # bottom right
+                                        loop_uv.uv = [0.0, 0.0]       # bottom right
+                                    
+                                    """
+                                    if (idxLoop == 0):
+                                        loop_uv.uv = [0.0, 0.0]       # bottom left
+                                    if (idxLoop == 1):
+                                        loop_uv.uv = [0.0, 1.0]       # top left
+
+                                                0 = 1
+                                                1 = 2
+                                                2 = 3
+                                                3 = 0
+
+                                    """
                 bm.to_mesh(mesh)
 
 
