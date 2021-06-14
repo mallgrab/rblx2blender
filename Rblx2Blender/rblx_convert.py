@@ -471,6 +471,7 @@ class StartConverting(bpy.types.Operator):
             for brick in BrickList:
                 mesh = brick[0]
                 scale = brick[1]
+                textures = brick[2]
 
                 bm = bmesh.new()
                 bm.from_mesh(mesh)
@@ -496,6 +497,21 @@ class StartConverting(bpy.types.Operator):
                                 loop_uv.uv = [0.0, 0.0]                     # bottom left
                             if (idxLoop == 3):
                                 loop_uv.uv = [(scale[2]/2), 0.0]            # bottom right
+                    
+                        # vertices need to get rotated by 90 degrees
+                        # a.k.a we are putting the vertices in the wrong corners just mess around until its roughly 90
+                        for i in textures:                            
+                            if (i[1] == idxFace):
+                                if (i[2] == 'Decal'):
+                                    loop_uv = loop[uv_layer]
+                                    if (idxLoop == 0):
+                                        loop_uv.uv = [1.0, 1.0]       # top right
+                                    if (idxLoop == 1):
+                                        loop_uv.uv = [0.0, 1.0]              # top left
+                                    if (idxLoop == 2):
+                                        loop_uv.uv = [0.0, 0.0]                     # bottom left
+                                    if (idxLoop == 3):
+                                        loop_uv.uv = [1.0, 0.0]            # bottom right
                 bm.to_mesh(mesh)
 
 
