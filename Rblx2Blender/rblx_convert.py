@@ -17,7 +17,6 @@ from . rblx_legacy_color import BrickColor
 # debug
 import timeit
 
-# location, rotation, scale, brickcolor, type, surface(TopSurface, BottomSurface), 
 class Part(object):
     def __init__(self):
         self.location = [0.0, 0.0, 0.0]
@@ -112,20 +111,17 @@ def CreateMaterialFromBrickColor(colorID):
         print("BrickColor", colorID, "is not defined")
         return CreateMaterial(0, 0, 0)
 
-# Returns material index if the material name is the same.
+# Returns material index of material correlating to dir.
 def GetMaterialIndex(dir, mesh):
     for idx, i in enumerate(mesh.materials):
         if (i.name == "Tex" + os.path.basename(dir)):
-            print(i)
             return idx
 
-    # Material does not exist within Part
+    # Material does not exist, append and return last material index.
     mesh.materials.append(CreateMaterialWithTexture(dir))
     return 0
 
-
-
-# Local texture which got duplicated. Uses md5 hash for the texture.
+# Local texture which got duplicated from parts. Uses md5 hash of the copied texture for the name.
 def TextureDuplicated(TextureMd5, FaceIdx, Part):
     Part.md5Textures.append([TextureMd5, FaceIdx])
 
@@ -195,7 +191,6 @@ def CreatePart(scale, rotation, translate, brickcolor, type, textures):
         bpy.context.collection.objects.link(basic_cylinder)
         
         bm = bmesh.new()
-        
         bmesh.ops.create_cone(bm, cap_ends=True, cap_tris=False, segments=12, diameter1=0.5, diameter2=0.5, depth=0.5)
         
         scale[2] = scale[2] + scale[2]
@@ -204,8 +199,8 @@ def CreatePart(scale, rotation, translate, brickcolor, type, textures):
         # flip the cylinders
         rotation[0] = rotation[0] - rotation[0]
         rotation[1] = rotation[1] + radians(90)
-        bmesh.ops.rotate(bm, matrix=mathutils.Euler(rotation, 'XYZ').to_matrix(), verts=bm.verts)
         
+        bmesh.ops.rotate(bm, matrix=mathutils.Euler(rotation, 'XYZ').to_matrix(), verts=bm.verts)
         bmesh.ops.translate(bm, vec=translate, verts=bm.verts)
         
         bm.to_mesh(mesh)
@@ -225,11 +220,6 @@ def CreatePart(scale, rotation, translate, brickcolor, type, textures):
         
         global CylinderList
         CylinderList.append(mesh)
-        
-        # Later to apply top/bottom texture for the parts
-        # https://blender.stackexchange.com/questions/149956/python-to-select-and-delete-multiple-faces
-        #for f in mesh.polygons:
-            #f.material_index
                
     if (type == 1):
         mesh = bpy.data.meshes.new('Part_Brick')
@@ -443,10 +433,10 @@ class StartConverting(bpy.types.Operator):
         for Part in PartsList:
             CreatePart(Part.scale, Part.rotation, Part.location, Part.brickColor, Part.brickType, Part.textures)
 
+        # Rotate place properly
         for obj in bpy.context.scene.objects:
             obj.select_set(True)
 
-        # Rotate place properly
         for i in  bpy.context.selected_objects:
             i.rotation_euler.x = radians(90.0)
 
@@ -465,18 +455,6 @@ class StartConverting(bpy.types.Operator):
         for obj in bpy.context.scene.objects:
             obj.select_set(False)
 
-        """
-        UV:
-        By default set vertex to each corner after cube_project().
-
-        If a decal is placed on a specific surface on the brick.
-        Do not do anything on that particular surface.
-
-        If theres no decal on a specific surface.
-        Increase UV width/height by surface size.
-        This will repeat the stud pattern.
-        """
-
         bpy.ops.object.mode_set(mode='OBJECT')
 
         if BrickList:
@@ -491,15 +469,11 @@ class StartConverting(bpy.types.Operator):
                 bm.faces.ensure_lookup_table()
 
 
-                # top and bottom of brick gets their UV stretched, creates tiling for the studs.
-                for idxFace, face in enumerate(bm.faces):
-                    # Check if part contains textures
-                    # If true select face
-                        # Apply material to face
-                        # Deselect
-                    
+                for idxFace, face in enumerate(bm.faces):                    
                     for idxLoop, loop in enumerate(bm.faces[idxFace].loops):
                         loop_uv = loop[uv_layer]
+                        
+                        # top and bottom of brick gets their UV stretched, creates tiling for the studs.
                         if (idxFace == 1 or idxFace == 3):
                             if (idxLoop == 0):
                                 loop_uv.uv = [scale[2]/2, scale[0]/4]       # top right
@@ -527,19 +501,6 @@ class StartConverting(bpy.types.Operator):
                                         loop_uv.uv = [0.0, 1.0]       # top right
                                     if (idxLoop == 3):
                                         loop_uv.uv = [0.0, 0.0]       # bottom right
-                                    
-                                    """
-                                    if (idxLoop == 0):
-                                        loop_uv.uv = [0.0, 0.0]       # bottom left
-                                    if (idxLoop == 1):
-                                        loop_uv.uv = [0.0, 1.0]       # top left
-
-                                                0 = 1
-                                                1 = 2
-                                                2 = 3
-                                                3 = 0
-
-                                    """
                 bm.to_mesh(mesh)
 
 
