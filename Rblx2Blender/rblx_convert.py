@@ -433,13 +433,6 @@ class StartConverting(bpy.types.Operator):
         for Part in PartsList:
             CreatePart(Part.scale, Part.rotation, Part.location, Part.brickColor, Part.brickType, Part.textures)
 
-        # Rotate place properly
-        for obj in bpy.context.scene.objects:
-            obj.select_set(True)
-
-        for i in  bpy.context.selected_objects:
-            i.rotation_euler.x = radians(90.0)
-
         # Seperate top and bottom part of cylinder so smoothing looks good
         if CylinderList:
             for i in CylinderList:
@@ -484,8 +477,8 @@ class StartConverting(bpy.types.Operator):
                             if (idxLoop == 3):
                                 loop_uv.uv = [(scale[2]/2), 0.0]            # bottom right
                     
-                        # vertices need to get rotated by 90 degrees
-                        # a.k.a we are putting the vertices in the wrong corners just mess around until its roughly 90
+                        # faces are wrong (top & bottom)
+                        # vertices on faces that are not top or bottom are wrong
                         for i in textures:
                             if (i[1] == idxFace):
                                 face.material_index = GetMaterialIndex(i[0], mesh)
@@ -494,13 +487,13 @@ class StartConverting(bpy.types.Operator):
                                 if (i[2] == 'Decal'):
                                     loop_uv = loop[uv_layer]
                                     if (idxLoop == 0):
-                                        loop_uv.uv = [1.0, 0.0]       # bottom left
-                                    if (idxLoop == 1):
-                                        loop_uv.uv = [1.0, 1.0]       # top left
-                                    if (idxLoop == 2):
                                         loop_uv.uv = [0.0, 1.0]       # top right
-                                    if (idxLoop == 3):
+                                    if (idxLoop == 1):
                                         loop_uv.uv = [0.0, 0.0]       # bottom right
+                                    if (idxLoop == 2):
+                                        loop_uv.uv = [1.0, 0.0]       # bottom left
+                                    if (idxLoop == 3):
+                                        loop_uv.uv = [1.0, 1.0]       # top left
                 bm.to_mesh(mesh)
 
 
@@ -525,6 +518,13 @@ class StartConverting(bpy.types.Operator):
                     if (idxLoop == 3):
                         loop_uv.uv = [scale[2]/2, 0.0]              # bottom right
         """
+
+        # Rotate place properly
+        for obj in bpy.context.scene.objects:
+            obj.select_set(True)
+
+        for i in  bpy.context.selected_objects:
+            i.rotation_euler.x = radians(90.0)
 
         timer += (timeit.default_timer() - start)
         print("done", timer)
