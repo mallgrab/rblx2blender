@@ -94,6 +94,7 @@ def CreateMaterialWithTexture(dir):
     texImage = mat.node_tree.nodes.new('ShaderNodeTexImage')
     texImage.image = bpy.data.images.load(dir)
     mat.node_tree.links.new(bsdf.inputs['Base Color'], texImage.outputs['Color'])
+    mat.node_tree.links.new(bsdf.inputs['Alpha'], texImage.outputs['Alpha'])
     return mat
 
 def CreateMaterialFromBrickColor(colorID):
@@ -124,6 +125,19 @@ def GetMaterialIndex(dir, mesh):
 # Local texture which got duplicated from parts. Uses md5 hash of the copied texture for the name.
 def TextureDuplicated(TextureMd5, FaceIdx, Part):
     Part.md5Textures.append([TextureMd5, FaceIdx])
+
+# Convert Roblox face index to Blender.
+def GetFaceIndex(FaceIdx):
+    switcher = {
+        0: 2,
+        1: 1,
+        2: 5,
+        3: 0,
+        4: 3,
+        5: 4,
+    }
+    # Return FaceIdx without converting it if its above 5.
+    return switcher.get(FaceIdx, FaceIdx)
 
 # On both functions return file location and face direction
 def GetLocalTexture(TextureXML, FaceIdx, Part, Type):
@@ -269,6 +283,10 @@ def CreatePart(scale, rotation, translate, brickcolor, type, textures):
         basic_sphere.data.materials.append(CreateMaterialFromBrickColor(brickcolor))
         bpy.ops.object.shade_smooth()
 
+# Rewrite this into a seperate class where we gather everything into Lists.
+# Functions that require access to the list do it through the class object.
+
+# Also use https://docs.python.org/3/library/xml.etree.elementtree.html#example (XPath, findall, etc)
 def GetDataFromPlace(root):
     global PartsList
     global CylinderList
@@ -347,7 +365,7 @@ def GetDataFromPlace(root):
                                 for Decal in Items.iter():   
                                     if (Decal.tag == 'token'):
                                         if (Decal.attrib.get('name') == 'Face'):
-                                            FaceIdx = int(Decal.text)   
+                                            FaceIdx = GetFaceIndex(int(Decal.text))  
                                     if (Decal.tag == 'hash' or Decal.tag == 'url'):
                                         GetOnlineTexture(Decal.text, FaceIdx, CurrentPart, 'Decal')            
                                     if (Decal.tag == 'binary'):
@@ -358,7 +376,7 @@ def GetDataFromPlace(root):
                                 for Texture in Items.iter():
                                     if (Texture.tag == 'token'):
                                         if (Texture.attrib.get('name') == 'Face'):
-                                            FaceIdx = int(Texture.text)
+                                            FaceIdx = GetFaceIndex(int(Texture.text))
                                     if (Texture.tag == 'hash'):
                                         TextureDuplicated(Texture.text, FaceIdx, CurrentPart)
                                     # We will use this later for now we assume every texture uses default values.                                    
