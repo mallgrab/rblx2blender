@@ -505,13 +505,13 @@ class StartConverting(bpy.types.Operator):
                                 if (i[2] == 'Decal'):
                                     loop_uv = loop[uv_layer]
                                     if (idxLoop == 0):
-                                        loop_uv.uv = [0.0, 1.0]       # top right
-                                    if (idxLoop == 1):
-                                        loop_uv.uv = [0.0, 0.0]       # bottom right
-                                    if (idxLoop == 2):
                                         loop_uv.uv = [1.0, 0.0]       # bottom left
-                                    if (idxLoop == 3):
+                                    if (idxLoop == 1):
                                         loop_uv.uv = [1.0, 1.0]       # top left
+                                    if (idxLoop == 2):
+                                        loop_uv.uv = [0.0, 1.0]       # top right
+                                    if (idxLoop == 3):
+                                        loop_uv.uv = [0.0, 0.0]       # bottom right
                 bm.to_mesh(mesh)
 
 
