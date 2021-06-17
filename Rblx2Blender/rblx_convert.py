@@ -502,8 +502,6 @@ class StartConverting(bpy.types.Operator):
                             if (idxLoop == 3):
                                 loop_uv.uv = [(scale[2]/2), 0.0]            # bottom right
                     
-                        # faces are wrong (top & bottom)
-                        # vertices on faces that are not top or bottom are wrong
                         for i in textures:
                             if (i[1] == idxFace):
                                 face.material_index = GetMaterialIndex(i[0], mesh)
@@ -511,14 +509,35 @@ class StartConverting(bpy.types.Operator):
                             if (i[1] == idxFace):
                                 if (i[2] == 'Decal'):
                                     loop_uv = loop[uv_layer]
-                                    if (idxLoop == 0):
-                                        loop_uv.uv = [1.0, 0.0]       # bottom left
-                                    if (idxLoop == 1):
-                                        loop_uv.uv = [1.0, 1.0]       # top left
-                                    if (idxLoop == 2):
-                                        loop_uv.uv = [0.0, 1.0]       # top right
-                                    if (idxLoop == 3):
-                                        loop_uv.uv = [0.0, 0.0]       # bottom right
+                                    if (idxFace == 1 or idxFace == 3):
+                                        if (idxLoop == 0):
+                                            loop_uv.uv = [1.0, 0.0]       # bottom left
+                                        if (idxLoop == 1):
+                                            loop_uv.uv = [1.0, 1.0]       # top left
+                                        if (idxLoop == 2):
+                                            loop_uv.uv = [0.0, 1.0]       # top right
+                                        if (idxLoop == 3):
+                                            loop_uv.uv = [0.0, 0.0]       # bottom right
+                                    if (idxFace == 0 or idxFace == 2):
+                                        if (idxLoop == 0):
+                                            loop_uv.uv = [0.0, 0.0]       # bottom right
+                                        if (idxLoop == 1):
+                                            loop_uv.uv = [1.0, 0.0]       # bottom left
+                                        if (idxLoop == 2):
+                                            loop_uv.uv = [1.0, 1.0]       # top left
+                                        if (idxLoop == 3):
+                                            loop_uv.uv = [0.0, 1.0]       # top right
+                                    if (idxFace == 5 or idxFace == 4):    
+                                        if (idxLoop == 0):
+                                            loop_uv.uv = [1.0, 1.0]       # top left
+                                        if (idxLoop == 1):
+                                            loop_uv.uv = [0.0, 1.0]       # top right
+                                        if (idxLoop == 2):
+                                            loop_uv.uv = [0.0, 0.0]       # bottom right
+                                        if (idxLoop == 3):
+                                            loop_uv.uv = [1.0, 0.0]       # bottom left                                    
+                                    else:
+                                        print("Part contains more than 6 faces.")
                 bm.to_mesh(mesh)
 
 
@@ -543,13 +562,6 @@ class StartConverting(bpy.types.Operator):
                     if (idxLoop == 3):
                         loop_uv.uv = [scale[2]/2, 0.0]              # bottom right
         """
-
-        # Rotate place properly
-        for obj in bpy.context.scene.objects:
-            obj.select_set(True)
-
-        for i in  bpy.context.selected_objects:
-            i.rotation_euler.x = radians(90.0)
 
         timer += (timeit.default_timer() - start)
         print("done", timer)
