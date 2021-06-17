@@ -451,6 +451,13 @@ class StartConverting(bpy.types.Operator):
         for Part in PartsList:
             CreatePart(Part.scale, Part.rotation, Part.location, Part.brickColor, Part.brickType, Part.textures)
 
+        # Rotate place properly
+        for obj in bpy.context.scene.objects:
+            obj.select_set(True)
+
+        for i in  bpy.context.selected_objects:
+            i.rotation_euler.x = radians(90.0)
+
         # Seperate top and bottom part of cylinder so smoothing looks good
         if CylinderList:
             for i in CylinderList:
