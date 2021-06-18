@@ -94,6 +94,9 @@ def CreateMaterialWithTexture(dir):
     texImage = mat.node_tree.nodes.new('ShaderNodeTexImage')
     texImage.image = bpy.data.images.load(dir)
     mat.node_tree.links.new(bsdf.inputs['Base Color'], texImage.outputs['Color'])
+    
+    # Mix base color with texture (mix shader)
+        # Check how unity reacts to the model.
     mat.node_tree.links.new(bsdf.inputs['Alpha'], texImage.outputs['Alpha'])
     return mat
 
@@ -377,6 +380,9 @@ def GetDataFromPlace(root):
                                     if (Texture.tag == 'token'):
                                         if (Texture.attrib.get('name') == 'Face'):
                                             FaceIdx = GetFaceIndex(int(Texture.text))
+                                    if (Texture.tag == 'url'):
+                                        GetOnlineTexture(Texture.text, FaceIdx, CurrentPart, 'Texture')
+                                    
                                     if (Texture.tag == 'hash'):
                                         TextureDuplicated(Texture.text, FaceIdx, CurrentPart)
                                     # We will use this later for now we assume every texture uses default values.                                    
@@ -536,6 +542,39 @@ class StartConverting(bpy.types.Operator):
                                             loop_uv.uv = [0.0, 0.0]       # bottom right
                                         if (idxLoop == 3):
                                             loop_uv.uv = [1.0, 0.0]       # bottom left                                    
+                                    else:
+                                        print("Part contains more than 6 faces.")
+
+                            if (i[1] == idxFace):
+                                if (i[2] == 'Texture'):
+                                    loop_uv = loop[uv_layer]
+                                    if (idxFace == 1 or idxFace == 3):
+                                        if (idxLoop == 0):
+                                            loop_uv.uv = [scale[0]/2, 0.0]
+                                        if (idxLoop == 1):
+                                            loop_uv.uv = [scale[0]/2, scale[1]/2]
+                                        if (idxLoop == 2):
+                                            loop_uv.uv = [0.0, scale[1]/2]
+                                        if (idxLoop == 3):
+                                            loop_uv.uv = [0.0, 0.0]
+                                    if (idxFace == 0 or idxFace == 2):
+                                        if (idxLoop == 0):
+                                            loop_uv.uv = [0.0, 0.0]
+                                        if (idxLoop == 1):
+                                            loop_uv.uv = [scale[0]/2, 0.0]
+                                        if (idxLoop == 2):
+                                            loop_uv.uv = [scale[0]/2, scale[1]/2]
+                                        if (idxLoop == 3):
+                                            loop_uv.uv = [0.0, scale[1]/2]
+                                    if (idxFace == 5 or idxFace == 4):    
+                                        if (idxLoop == 0):
+                                            loop_uv.uv = [scale[0]/2, scale[1]/2]
+                                        if (idxLoop == 1):
+                                            loop_uv.uv = [0.0, scale[1]/2]
+                                        if (idxLoop == 2):
+                                            loop_uv.uv = [0.0, 0.0]
+                                        if (idxLoop == 3):
+                                            loop_uv.uv = [scale[0]/2, 0.0]                                  
                                     else:
                                         print("Part contains more than 6 faces.")
                 bm.to_mesh(mesh)
