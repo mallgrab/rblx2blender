@@ -47,29 +47,26 @@ CylinderList = []
 SphereList = []
 
 # Contains path of all textures
-TextureList = []
 
-CurrentPart = [[0.0, 0.0, 0.0],[0.0, 0.0, 0.0],[0.0, 0.0, 0.0],[0],[0],["",""]]
 RotationMatrix = mathutils.Matrix(([0,0,0],[0,0,0],[0,0,0]))
-base64Buffer = ""
+
+
 localTexId = 0
 rbxlx = False
 
-bpyscene = ""
-dobjects = ""
-objects = ""
+# bpyscene = ""
+# dobjects = ""
+# objects = ""
 
-RobloxPlace = ""
+#RobloxPlace = ""
 RobloxInstallLocation = ""
 PlaceName = ""
 AssetsDir = ""
 
-def CalculateRotation(CurrentPart):
-    EulerVector3 = RotationMatrix.to_euler("XYZ")
-
-    CurrentPart.rotation[0] = EulerVector3[0]
-    CurrentPart.rotation[1] = EulerVector3[1]
-    CurrentPart.rotation[2] = EulerVector3[2]
+def CalculateRotation(part: Part, EulerVector3):
+    part.rotation[0] = EulerVector3[0]
+    part.rotation[1] = EulerVector3[1]
+    part.rotation[2] = EulerVector3[2]
 
 def srgb2linear(c):
     if c < 0.04045:
@@ -307,13 +304,11 @@ def GetDataFromPlace(root):
     global CylinderList
     global BrickList
     global SphereList
-    global TextureList
 
     PartsList = []
     CylinderList = []
     BrickList = []
     SphereList = []
-    TextureList = []
 
     for DataModel in root:
         if (DataModel.get('class') == 'Workspace'):
@@ -340,6 +335,7 @@ def GetDataFromPlace(root):
                             if (Properties.tag == 'CoordinateFrame'):
                                 if (Properties.attrib.get('name') == 'CFrame'):
                                     for Pos in Properties.iter():
+
                                         if (Pos.tag == 'X'): CurrentPart.location[0] = float(Pos.text)
                                         if (Pos.tag == 'Y'): CurrentPart.location[1] = float(Pos.text)
                                         if (Pos.tag == 'Z'): CurrentPart.location[2] = float(Pos.text)
@@ -372,7 +368,7 @@ def GetDataFromPlace(root):
                                             CurrentPart.scale[1] = float(Pos.text)
                                         if (Pos.tag == 'Z'): 
                                             CurrentPart.scale[2] = float(Pos.text)
-                                            CalculateRotation(CurrentPart)
+                                            CalculateRotation(CurrentPart, RotationMatrix.to_euler("XYZ"))
          
                     for Items in Workspace.iter('Item'):
                         if (Items.get('class') == 'Decal'):
@@ -414,19 +410,19 @@ class StartConverting(bpy.types.Operator):
     bl_label = "Start Converting"
 
     def execute(self, context):
-        global bpyscene
-        global dobjects
-        global objects
+        #global bpyscene
+        #global dobjects
+        #global objects
         global rbxlx
-        global RobloxPlace
+        #global RobloxPlace
         global RobloxInstallLocation
         global PlaceName
         global AssetsDir
         global localTexId
 
         bpyscene = context.scene
-        dobjects = bpy.data.objects
-        objects = context.scene.objects
+        # dobjects = bpy.data.objects
+        # objects = context.scene.objects
 
         RobloxPlace = bpyscene.Place_Path.file_path
         RobloxInstallLocation = bpyscene.Install_Path.file_path
@@ -453,6 +449,8 @@ class StartConverting(bpy.types.Operator):
         GetDataFromPlace(root)
 
         # If place has textures fill up TextureList.
+
+        TextureList = []
         if (os.path.exists(AssetsDir)):
             for i in os.listdir(AssetsDir):
                 TextureList.append(os.path.abspath(AssetsDir + "/" + i))
