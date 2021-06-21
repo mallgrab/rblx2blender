@@ -1,5 +1,7 @@
 from copy import deepcopy
 from math import radians, degrees
+from typing import NamedTuple
+from collections import namedtuple
 
 import xml.etree.ElementTree as ET
 import mathutils
@@ -27,6 +29,17 @@ class Part(object):
         self.textures = []
         self.md5Textures = []
         self.decals = []
+
+class Brick(object):
+    def __init__(self, mesh, scale, textures):
+        self.mesh = mesh
+        self.scale = scale
+        self.textures = textures
+
+class TileUV(object):
+    def __init__(self, U, V):
+        self.TileU = U
+        self.TileV = V
 
 PartsList = []
 BrickList = []
