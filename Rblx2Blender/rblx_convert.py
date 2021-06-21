@@ -139,8 +139,8 @@ def GetMaterialIndex(dir, mesh):
     return 0
 
 # Local texture which got duplicated from parts. Uses md5 hash of the copied texture for the name.
-def TextureDuplicated(TextureMd5, FaceIdx, Part):
-    Part.md5Textures.append([TextureMd5, FaceIdx])
+def TextureDuplicated(TextureMd5, FaceIdx, part: Part):
+    part.md5Textures.append([TextureMd5, FaceIdx])
 
 # Convert Roblox face index to Blender.
 def GetFaceIndex(FaceIdx):
@@ -155,8 +155,7 @@ def GetFaceIndex(FaceIdx):
     # Return FaceIdx without converting it if its above 5.
     return switcher.get(FaceIdx, FaceIdx)
 
-# On both functions return file location and face direction
-def GetLocalTexture(TextureXML, FaceIdx, Part, Type):
+def GetLocalTexture(TextureXML, FaceIdx, part: Part, Type):
     global localTexId
     base64buffer = TextureXML.text
     base64buffer = base64buffer.replace('\n', '')
@@ -176,19 +175,19 @@ def GetLocalTexture(TextureXML, FaceIdx, Part, Type):
     shutil.move(textureName, AssetsDir)
 
     textureDir = os.path.abspath(AssetsDir + "/" + textureName)
-    Part.textures.append([textureDir, FaceIdx, Type])
+    part.textures.append([textureDir, FaceIdx, Type])
     localTexId += 1
     
 
-def GetOnlineTexture(Link, FaceIdx, Part, Type):
+def GetOnlineTexture(Link, FaceIdx, part: Part, Type, TileUV: TileUV):
     assetID = re.sub(r'[^0-9]+', '', Link.lower())
     localAsset = False
 
     if not (os.path.exists(PlaceName + "Assets")):
         os.mkdir(PlaceName + "Assets")
 
-    # Check if what we return would even work as a file link for blender
-    # Might have to reformat it a little bit so it works cause of backslashes
+    # Get local asset from the roblox content folder.
+    # This might not work because of backslash formating, depends on blender.
     if not (assetID):
         if ("rbxasset://" in Link):
             assetID = Link.replace('rbxasset://', RobloxInstallLocation)
@@ -212,10 +211,10 @@ def GetOnlineTexture(Link, FaceIdx, Part, Type):
             os.rename(r'tmp',r'' + assetFileName)
             shutil.move(assetFileName, AssetsDir)
             textureDir = os.path.abspath(AssetsDir + "/" + assetFileName)
-            Part.textures.append([textureDir, FaceIdx, Type])
+            part.textures.append([textureDir, FaceIdx, Type])
 
-def CreatePart(scale, rotation, translate, brickcolor, type, textures):
-    if (type == 2):
+def CreatePart(part: Part):
+    if (part.brickType == 2):
         mesh = bpy.data.meshes.new('Part_Cylinder')
         basic_cylinder = bpy.data.objects.new("Part_Cylinder", mesh)
         bpy.context.collection.objects.link(basic_cylinder)
@@ -223,15 +222,15 @@ def CreatePart(scale, rotation, translate, brickcolor, type, textures):
         bm = bmesh.new()
         bmesh.ops.create_cone(bm, cap_ends=True, cap_tris=False, segments=12, diameter1=0.5, diameter2=0.5, depth=0.5)
         
-        scale[2] = scale[2] + scale[2]
-        bmesh.ops.scale(bm, vec=scale, verts=bm.verts)
+        part.scale[2] = part.scale[2] + part.scale[2]
+        bmesh.ops.scale(bm, vec=part.scale, verts=bm.verts)
         
         # flip the cylinders
-        rotation[0] = rotation[0] - rotation[0]
-        rotation[1] = rotation[1] + radians(90)
+        part.rotation[0] = part.rotation[0] - part.rotation[0]
+        part.rotation[1] = part.rotation[1] + radians(90)
         
-        bmesh.ops.rotate(bm, matrix=mathutils.Euler(rotation, 'XYZ').to_matrix(), verts=bm.verts)
-        bmesh.ops.translate(bm, vec=translate, verts=bm.verts)
+        bmesh.ops.rotate(bm, matrix=mathutils.Euler(part.rotation, 'XYZ').to_matrix(), verts=bm.verts)
+        bmesh.ops.translate(bm, vec=part.location, verts=bm.verts)
         
         bm.to_mesh(mesh)
         
@@ -245,13 +244,13 @@ def CreatePart(scale, rotation, translate, brickcolor, type, textures):
         
         bpy.context.view_layer.objects.active = basic_cylinder
         basic_cylinder.select_set(True)
-        basic_cylinder.data.materials.append(CreateMaterialFromBrickColor(brickcolor))
+        basic_cylinder.data.materials.append(CreateMaterialFromBrickColor(part.brickColor))
         basic_cylinder.select_set(False)
         
         global CylinderList
         CylinderList.append(mesh)
                
-    if (type == 1):
+    if (part.brickType == 1):
         mesh = bpy.data.meshes.new('Part_Brick')
         basic_brick = bpy.data.objects.new("Part_Brick", mesh)
 
@@ -259,22 +258,22 @@ def CreatePart(scale, rotation, translate, brickcolor, type, textures):
         bm = bmesh.new()
     
         bmesh.ops.create_cube(bm, size=1)
-        bmesh.ops.scale(bm, vec=scale, verts=bm.verts)
-        bmesh.ops.rotate(bm, matrix=mathutils.Euler(rotation, 'XYZ').to_matrix(), verts=bm.verts)
-        bmesh.ops.translate(bm, vec=translate, verts=bm.verts)
+        bmesh.ops.scale(bm, vec=part.scale, verts=bm.verts)
+        bmesh.ops.rotate(bm, matrix=mathutils.Euler(part.rotation, 'XYZ').to_matrix(), verts=bm.verts)
+        bmesh.ops.translate(bm, vec=part.location, verts=bm.verts)
 
         bm.to_mesh(mesh)
         bm.free()
         
         bpy.context.view_layer.objects.active = basic_brick
         basic_brick.select_set(True)
-        basic_brick.data.materials.append(CreateMaterialFromBrickColor(brickcolor))
+        basic_brick.data.materials.append(CreateMaterialFromBrickColor(part.brickColor))
         basic_brick.select_set(False)
 
         global BrickList
-        BrickList.append([mesh, scale, textures])
+        BrickList.append(Brick(mesh, part.scale, part.textures))
         
-    if (type == 0):
+    if (part.brickType == 0):
         mesh = bpy.data.meshes.new('Part_Sphere')
         basic_sphere = bpy.data.objects.new("Part_Sphere", mesh)
 
@@ -282,9 +281,9 @@ def CreatePart(scale, rotation, translate, brickcolor, type, textures):
         bm = bmesh.new()
         
         bmesh.ops.create_uvsphere(bm, u_segments=16, v_segments=8, diameter=0.5)
-        bmesh.ops.scale(bm, vec=scale, verts=bm.verts)
-        bmesh.ops.rotate(bm, matrix=mathutils.Euler(rotation, 'XYZ').to_matrix(), verts=bm.verts)
-        bmesh.ops.translate(bm, vec=translate, verts=bm.verts)
+        bmesh.ops.scale(bm, vec=part.scale, verts=bm.verts)
+        bmesh.ops.rotate(bm, matrix=mathutils.Euler(part.rotation, 'XYZ').to_matrix(), verts=bm.verts)
+        bmesh.ops.translate(bm, vec=part.location, verts=bm.verts)
         
         bm.to_mesh(mesh)
         bm.free()
@@ -296,7 +295,7 @@ def CreatePart(scale, rotation, translate, brickcolor, type, textures):
         bpy.context.view_layer.objects.active = basic_sphere
         basic_sphere.select_set(True)
         bpy.ops.object.modifier_add(type='SUBSURF')
-        basic_sphere.data.materials.append(CreateMaterialFromBrickColor(brickcolor))
+        basic_sphere.data.materials.append(CreateMaterialFromBrickColor(part.brickColor))
         bpy.ops.object.shade_smooth()
 
 # Rewrite this into a seperate class where we gather everything into Lists.
@@ -383,29 +382,30 @@ def GetDataFromPlace(root):
                                         if (Decal.attrib.get('name') == 'Face'):
                                             FaceIdx = GetFaceIndex(int(Decal.text))  
                                     if (Decal.tag == 'hash' or Decal.tag == 'url'):
-                                        GetOnlineTexture(Decal.text, FaceIdx, CurrentPart, 'Decal')            
+                                        GetOnlineTexture(Decal.text, FaceIdx, CurrentPart, 'Decal', TileUV(None, None))            
                                     if (Decal.tag == 'binary'):
                                         GetLocalTexture(Decal, FaceIdx, CurrentPart, 'Decal')
 
                         if (Items.get('class') == 'Texture'):
                             if (Workspace.attrib.get('class') == 'Part'):
+                                TileU = 2
+                                TileV = 2
                                 for Texture in Items.iter():
+                                    if (Texture.tag == 'float'):
+                                        if (Texture.attrib.get('name') == 'StudsPerTileU'):
+                                            TileU = float(Texture.text)
+                                        if (Texture.attrib.get('name') == 'StudsPerTileV'):
+                                            TileV = float(Texture.text)
+
                                     if (Texture.tag == 'token'):
                                         if (Texture.attrib.get('name') == 'Face'):
                                             FaceIdx = GetFaceIndex(int(Texture.text))
                                     if (Texture.tag == 'url'):
-                                        GetOnlineTexture(Texture.text, FaceIdx, CurrentPart, 'Texture')
+                                        GetOnlineTexture(Texture.text, FaceIdx, CurrentPart, 'Texture', TileUV(TileU, TileV))
                                     
                                     if (Texture.tag == 'hash'):
-                                        TextureDuplicated(Texture.text, FaceIdx, CurrentPart)
-                                    # We will use this later for now we assume every texture uses default values.                                    
-                                    """
-                                    if (Texture.tag == 'float'):
-                                        if (Texture.attrib.get('name') == 'StudsPerTileU'):
-                                            print("StudsPerTileU: " + Texture.text)
-                                        if (Texture.attrib.get('name') == 'StudsPerTileV'):
-                                            print("StudsPerTileV: " + Texture.text)
-                                    """
+                                        TextureDuplicated(Texture.text, FaceIdx, CurrentPart)                                  
+
                                     if (Texture.tag == 'binary'):
                                         GetLocalTexture(Texture, FaceIdx, CurrentPart, 'Texture')
 
@@ -468,7 +468,7 @@ class StartConverting(bpy.types.Operator):
                         i.textures.append(v)
 
         for Part in PartsList:
-            CreatePart(Part.scale, Part.rotation, Part.location, Part.brickColor, Part.brickType, Part.textures)
+            CreatePart(Part)
 
         # Rotate place properly
         for obj in bpy.context.scene.objects:
@@ -495,16 +495,12 @@ class StartConverting(bpy.types.Operator):
         bpy.ops.object.mode_set(mode='OBJECT')
 
         if BrickList:
+            brick: Brick
             for brick in BrickList:
-                mesh = brick[0]
-                scale = brick[1]
-                textures = brick[2]
-
                 bm = bmesh.new()
-                bm.from_mesh(mesh)
+                bm.from_mesh(brick.mesh)
                 uv_layer = bm.loops.layers.uv.verify()
                 bm.faces.ensure_lookup_table()
-
 
                 for idxFace, face in enumerate(bm.faces):                    
                     for idxLoop, loop in enumerate(bm.faces[idxFace].loops):
@@ -522,9 +518,9 @@ class StartConverting(bpy.types.Operator):
                                 loop_uv.uv = [(scale[2]/2), 0.0]            # bottom right
                         """
                     
-                        for i in textures:
+                        for i in brick.textures:
                             if (i[1] == idxFace):
-                                face.material_index = GetMaterialIndex(i[0], mesh)
+                                face.material_index = GetMaterialIndex(i[0], brick.mesh)
 
                             if (i[1] == idxFace):
                                 if (i[2] == 'Decal'):
@@ -557,64 +553,41 @@ class StartConverting(bpy.types.Operator):
                                         if (idxLoop == 3):
                                             loop_uv.uv = [1.0, 0.0]       # bottom left                                    
                                     else:
-                                        print("Part contains more than 6 faces.")
+                                        continue
 
                             if (i[1] == idxFace):
                                 if (i[2] == 'Texture'):
                                     loop_uv = loop[uv_layer]
                                     if (idxFace == 1 or idxFace == 3):
                                         if (idxLoop == 0):  # No clue why we have to add 1.0 or subtract 1.0 depending on face....
-                                            loop_uv.uv = [scale[0]/2, -(scale[2]/2)+1.0]
+                                            loop_uv.uv = [brick.scale[0]/2, -(brick.scale[2]/2)+1.0]
                                         if (idxLoop == 1):
-                                            loop_uv.uv = [scale[0]/2, 1.0]
+                                            loop_uv.uv = [brick.scale[0]/2, 1.0]
                                         if (idxLoop == 2):
                                             loop_uv.uv = [0.0, 1.0]
                                         if (idxLoop == 3):
-                                            loop_uv.uv = [0.0, -(scale[2]/2)+1.0]
+                                            loop_uv.uv = [0.0, -(brick.scale[2]/2)+1.0]
                                     if (idxFace == 0 or idxFace == 2):
                                         if (idxLoop == 0):
-                                            loop_uv.uv = [0.0, -scale[2]/2]
+                                            loop_uv.uv = [0.0, -brick.scale[2]/2]
                                         if (idxLoop == 1):
-                                            loop_uv.uv = [(scale[0]/2)-1.0, -scale[2]/2]
+                                            loop_uv.uv = [(brick.scale[0]/2)-1.0, -brick.scale[2]/2]
                                         if (idxLoop == 2):
-                                            loop_uv.uv = [(scale[0]/2)-1.0, 1.0]
+                                            loop_uv.uv = [(brick.scale[0]/2)-1.0, 1.0]
                                         if (idxLoop == 3):
                                             loop_uv.uv = [0.0, 1.0]
                                     if (idxFace == 5 or idxFace == 4):    
                                         if (idxLoop == 0):
-                                            loop_uv.uv = [scale[0]/2, 1.0]
+                                            loop_uv.uv = [brick.scale[0]/2, 1.0]
                                         if (idxLoop == 1):
                                             loop_uv.uv = [0.0, 1.0]
                                         if (idxLoop == 2):
-                                            loop_uv.uv = [0.0, -scale[2]/2]
+                                            loop_uv.uv = [0.0, -brick.scale[2]/2]
                                         if (idxLoop == 3):
-                                            loop_uv.uv = [scale[0]/2, -scale[2]/2]                                  
+                                            loop_uv.uv = [brick.scale[0]/2, -brick.scale[2]/2]                                  
                                     else:
-                                        print("Part contains more than 6 faces.")
-                bm.to_mesh(mesh)
-
-
-        """ Roblox does some funny shit to the UV's on the sides, this looks 'ok' but its not the same as in Roblox.
-                if (idxFace == 4 or idxFace == 5):
-                    if (idxLoop == 0):
-                        loop_uv.uv = [scale[0]/2, scale[1]/4]   # top right
-                    if (idxLoop == 1):
-                        loop_uv.uv = [0.0, scale[1]/4]              # top left
-                    if (idxLoop == 2):
-                        loop_uv.uv = [0.0, 0.0]                         # bottom left
-                    if (idxLoop == 3):
-                        loop_uv.uv = [scale[0]/2, 0.0]              # bottom right
-
-                if (idxFace == 2 or idxFace == 0):
-                    if (idxLoop == 0):
-                        loop_uv.uv = [scale[2]/2, scale[1]/4]   # top right
-                    if (idxLoop == 1):
-                        loop_uv.uv = [0.0, scale[1]/4]              # top left
-                    if (idxLoop == 2):
-                        loop_uv.uv = [0.0, 0.0]                         # bottom left
-                    if (idxLoop == 3):
-                        loop_uv.uv = [scale[2]/2, 0.0]              # bottom right
-        """
+                                        continue
+                bm.to_mesh(brick.mesh)
 
         timer += (timeit.default_timer() - start)
         print("done", timer)
