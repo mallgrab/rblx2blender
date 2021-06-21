@@ -496,7 +496,7 @@ class StartConverting(bpy.types.Operator):
                 for idxFace, face in enumerate(bm.faces):                    
                     for idxLoop, loop in enumerate(bm.faces[idxFace].loops):
                         loop_uv = loop[uv_layer]
-                        
+                        """
                         # top and bottom of brick gets their UV stretched, creates tiling for the studs.
                         if (idxFace == 1 or idxFace == 3):
                             if (idxLoop == 0):
@@ -507,6 +507,7 @@ class StartConverting(bpy.types.Operator):
                                 loop_uv.uv = [0.0, 0.0]                     # bottom left
                             if (idxLoop == 3):
                                 loop_uv.uv = [(scale[2]/2), 0.0]            # bottom right
+                        """
                     
                         for i in textures:
                             if (i[1] == idxFace):
@@ -549,32 +550,32 @@ class StartConverting(bpy.types.Operator):
                                 if (i[2] == 'Texture'):
                                     loop_uv = loop[uv_layer]
                                     if (idxFace == 1 or idxFace == 3):
-                                        if (idxLoop == 0):
-                                            loop_uv.uv = [scale[0]/2, 0.0]
+                                        if (idxLoop == 0):  # No clue why we have to add 1.0 or subtract 1.0 depending on face....
+                                            loop_uv.uv = [scale[0]/2, -(scale[2]/2)+1.0]
                                         if (idxLoop == 1):
-                                            loop_uv.uv = [scale[0]/2, scale[1]/2]
+                                            loop_uv.uv = [scale[0]/2, 1.0]
                                         if (idxLoop == 2):
-                                            loop_uv.uv = [0.0, scale[1]/2]
+                                            loop_uv.uv = [0.0, 1.0]
                                         if (idxLoop == 3):
-                                            loop_uv.uv = [0.0, 0.0]
+                                            loop_uv.uv = [0.0, -(scale[2]/2)+1.0]
                                     if (idxFace == 0 or idxFace == 2):
                                         if (idxLoop == 0):
-                                            loop_uv.uv = [0.0, 0.0]
+                                            loop_uv.uv = [0.0, -scale[2]/2]
                                         if (idxLoop == 1):
-                                            loop_uv.uv = [scale[0]/2, 0.0]
+                                            loop_uv.uv = [(scale[0]/2)-1.0, -scale[2]/2]
                                         if (idxLoop == 2):
-                                            loop_uv.uv = [scale[0]/2, scale[1]/2]
+                                            loop_uv.uv = [(scale[0]/2)-1.0, 1.0]
                                         if (idxLoop == 3):
-                                            loop_uv.uv = [0.0, scale[1]/2]
+                                            loop_uv.uv = [0.0, 1.0]
                                     if (idxFace == 5 or idxFace == 4):    
                                         if (idxLoop == 0):
-                                            loop_uv.uv = [scale[0]/2, scale[1]/2]
+                                            loop_uv.uv = [scale[0]/2, 1.0]
                                         if (idxLoop == 1):
-                                            loop_uv.uv = [0.0, scale[1]/2]
+                                            loop_uv.uv = [0.0, 1.0]
                                         if (idxLoop == 2):
-                                            loop_uv.uv = [0.0, 0.0]
+                                            loop_uv.uv = [0.0, -scale[2]/2]
                                         if (idxLoop == 3):
-                                            loop_uv.uv = [scale[0]/2, 0.0]                                  
+                                            loop_uv.uv = [scale[0]/2, -scale[2]/2]                                  
                                     else:
                                         print("Part contains more than 6 faces.")
                 bm.to_mesh(mesh)
