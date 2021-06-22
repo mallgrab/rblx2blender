@@ -36,6 +36,11 @@ class Texture(object):
         self.faceIdx = faceIndex
         self.type = textureType
 
+class TextureMd5(object):
+    def __init__(self, textureMd5, faceIdx):
+        self.textureMd5 = textureMd5
+        self.faceIdx = faceIdx
+
 class Brick(object):
     def __init__(self, mesh, scale, textures):
         self.mesh = mesh
@@ -130,7 +135,7 @@ def GetMaterialIndex(dir, mesh):
 
 # Local texture which got duplicated from parts. Uses md5 hash of the copied texture for the name.
 def TextureDuplicated(TextureMd5, FaceIdx, part: Part):
-    part.md5Textures.append([TextureMd5, FaceIdx])
+    part.md5Textures.append(TextureMd5(TextureMd5, FaceIdx))
 
 # Convert Roblox face index to Blender.
 def GetFaceIndex(FaceIdx):
@@ -165,7 +170,7 @@ def GetLocalTexture(TextureXML, FaceIdx, part: Part, Type, AssetsDir):
     shutil.move(textureName, AssetsDir)
 
     textureDir = os.path.abspath(AssetsDir + "/" + textureName)
-    part.textures.append([textureDir, FaceIdx, Type])
+    part.textures.append(Texture(textureDir, FaceIdx, Type))
     localTexId += 1
     
 
@@ -201,7 +206,7 @@ def GetOnlineTexture(Link, FaceIdx, part: Part, Type, TileUV: TileUV, RobloxInst
             os.rename(r'tmp',r'' + assetFileName)
             shutil.move(assetFileName, AssetsDir)
             textureDir = os.path.abspath(AssetsDir + "/" + assetFileName)
-            part.textures.append([textureDir, FaceIdx, Type])
+            part.textures.append(Texture(textureDir, FaceIdx, Type))
 
 def CreatePart(part: Part):
     if (part.brickType == 2):
@@ -439,17 +444,18 @@ class StartConverting(bpy.types.Operator):
                 TextureList.append(os.path.abspath(AssetsDir + "/" + i))
 
         # Convert md5 hash to the texture path
-        for i in PartsList:
-            for v in i.md5Textures:
+        part: Part
+        for part in PartsList:
+            for v in part.md5Textures:
                 md5Texture = v[0]
                 for TexturePath in TextureList:
                     if(md5(TexturePath) == md5Texture):
                         # Change md5 hash to texture path
                         v[0] = TexturePath
-                        i.textures.append(v)
+                        part.textures.append(v)
 
-        for Part in PartsList:
-            CreatePart(Part)
+        for part in PartsList:
+            CreatePart(part)
 
         # Rotate place properly
         for obj in bpy.context.scene.objects:
@@ -498,13 +504,14 @@ class StartConverting(bpy.types.Operator):
                             if (idxLoop == 3):
                                 loop_uv.uv = [(scale[2]/2), 0.0]            # bottom right
                         """
-                    
-                        for i in brick.textures:
-                            if (i[1] == idxFace):
-                                face.material_index = GetMaterialIndex(i[0], brick.mesh)
 
-                            if (i[1] == idxFace):
-                                if (i[2] == 'Decal'):
+                        texture: Texture
+                        for texture in brick.textures:
+                            if (texture.faceIdx == idxFace):
+                                face.material_index = GetMaterialIndex(texture.textureDir, brick.mesh)
+
+                            if (texture.faceIdx == idxFace):
+                                if (texture.type == 'Decal'):
                                     loop_uv = loop[uv_layer]
                                     if (idxFace == 1 or idxFace == 3):
                                         if (idxLoop == 0):
@@ -536,8 +543,8 @@ class StartConverting(bpy.types.Operator):
                                     else:
                                         continue
 
-                            if (i[1] == idxFace):
-                                if (i[2] == 'Texture'):
+                            if (texture.faceIdx == idxFace):
+                                if (texture.type == 'Texture'):
                                     loop_uv = loop[uv_layer]
                                     if (idxFace == 1 or idxFace == 3):
                                         if (idxLoop == 0):  # No clue why we have to add 1.0 or subtract 1.0 depending on face....
