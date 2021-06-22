@@ -46,22 +46,9 @@ BrickList = []
 CylinderList = []
 SphereList = []
 
-# Contains path of all textures
-
 RotationMatrix = mathutils.Matrix(([0,0,0],[0,0,0],[0,0,0]))
-
-
 localTexId = 0
 rbxlx = False
-
-# bpyscene = ""
-# dobjects = ""
-# objects = ""
-
-#RobloxPlace = ""
-RobloxInstallLocation = ""
-PlaceName = ""
-AssetsDir = ""
 
 def CalculateRotation(part: Part, EulerVector3):
     part.rotation[0] = EulerVector3[0]
@@ -152,7 +139,7 @@ def GetFaceIndex(FaceIdx):
     # Return FaceIdx without converting it if its above 5.
     return switcher.get(FaceIdx, FaceIdx)
 
-def GetLocalTexture(TextureXML, FaceIdx, part: Part, Type):
+def GetLocalTexture(TextureXML, FaceIdx, part: Part, Type, AssetsDir):
     global localTexId
     base64buffer = TextureXML.text
     base64buffer = base64buffer.replace('\n', '')
@@ -176,7 +163,7 @@ def GetLocalTexture(TextureXML, FaceIdx, part: Part, Type):
     localTexId += 1
     
 
-def GetOnlineTexture(Link, FaceIdx, part: Part, Type, TileUV: TileUV):
+def GetOnlineTexture(Link, FaceIdx, part: Part, Type, TileUV: TileUV, RobloxInstallLocation, PlaceName, AssetsDir):
     assetID = re.sub(r'[^0-9]+', '', Link.lower())
     localAsset = False
 
@@ -299,7 +286,7 @@ def CreatePart(part: Part):
 # Functions that require access to the list do it through the class object.
 
 # Also use https://docs.python.org/3/library/xml.etree.elementtree.html#example (XPath, findall, etc)
-def GetDataFromPlace(root):
+def GetDataFromPlace(root, RobloxInstallLocation, PlaceName, AssetsDir):
     global PartsList
     global CylinderList
     global BrickList
@@ -378,9 +365,9 @@ def GetDataFromPlace(root):
                                         if (Decal.attrib.get('name') == 'Face'):
                                             FaceIdx = GetFaceIndex(int(Decal.text))  
                                     if (Decal.tag == 'hash' or Decal.tag == 'url'):
-                                        GetOnlineTexture(Decal.text, FaceIdx, CurrentPart, 'Decal', TileUV(None, None))            
+                                        GetOnlineTexture(Decal.text, FaceIdx, CurrentPart, 'Decal', TileUV(None, None), RobloxInstallLocation, PlaceName, AssetsDir)            
                                     if (Decal.tag == 'binary'):
-                                        GetLocalTexture(Decal, FaceIdx, CurrentPart, 'Decal')
+                                        GetLocalTexture(Decal, FaceIdx, CurrentPart, 'Decal', AssetsDir)
 
                         if (Items.get('class') == 'Texture'):
                             if (Workspace.attrib.get('class') == 'Part'):
@@ -397,37 +384,30 @@ def GetDataFromPlace(root):
                                         if (Texture.attrib.get('name') == 'Face'):
                                             FaceIdx = GetFaceIndex(int(Texture.text))
                                     if (Texture.tag == 'url'):
-                                        GetOnlineTexture(Texture.text, FaceIdx, CurrentPart, 'Texture', TileUV(TileU, TileV))
+                                        GetOnlineTexture(Texture.text, FaceIdx, CurrentPart, 'Texture', TileUV(TileU, TileV), RobloxInstallLocation, PlaceName, AssetsDir)
                                     
                                     if (Texture.tag == 'hash'):
                                         TextureDuplicated(Texture.text, FaceIdx, CurrentPart)                                  
 
                                     if (Texture.tag == 'binary'):
-                                        GetLocalTexture(Texture, FaceIdx, CurrentPart, 'Texture')
+                                        GetLocalTexture(Texture, FaceIdx, CurrentPart, 'Texture', AssetsDir)
 
 class StartConverting(bpy.types.Operator):
     bl_idname = "scene.button_operator_convert"
     bl_label = "Start Converting"
 
     def execute(self, context):
-        #global bpyscene
-        #global dobjects
-        #global objects
         global rbxlx
-        #global RobloxPlace
-        global RobloxInstallLocation
-        global PlaceName
-        global AssetsDir
         global localTexId
 
         bpyscene = context.scene
-        # dobjects = bpy.data.objects
-        # objects = context.scene.objects
 
         RobloxPlace = bpyscene.Place_Path.file_path
         RobloxInstallLocation = bpyscene.Install_Path.file_path
         PlaceName = os.path.splitext(os.path.basename(RobloxPlace))[0]
+        
         AssetsDir = PlaceName + "Assets"
+        TextureList = []
         localTexId = 0
         
         rbxlx = RobloxPlace.lower().endswith(('rbxlx'))
@@ -436,7 +416,6 @@ class StartConverting(bpy.types.Operator):
         timer = 0.0
         start = timeit.default_timer()
 
-        # bpy.ops.object.select_all(action='DESELECT')
         for i in context.selectable_objects:
             i.select_set(False)
 
@@ -446,11 +425,9 @@ class StartConverting(bpy.types.Operator):
         for i in bpy.data.materials:
             bpy.data.materials.remove(i)
 
-        GetDataFromPlace(root)
+        GetDataFromPlace(root, RobloxInstallLocation, PlaceName, AssetsDir)
 
         # If place has textures fill up TextureList.
-
-        TextureList = []
         if (os.path.exists(AssetsDir)):
             for i in os.listdir(AssetsDir):
                 TextureList.append(os.path.abspath(AssetsDir + "/" + i))
