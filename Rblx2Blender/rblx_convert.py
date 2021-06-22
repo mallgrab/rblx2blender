@@ -30,6 +30,12 @@ class Part(object):
         self.md5Textures = []
         self.decals = []
 
+class Texture(object):
+    def __init__(self, textureDir, faceIndex, textureType):
+        self.textureDir = textureDir
+        self.faceIdx = faceIndex
+        self.type = textureType
+
 class Brick(object):
     def __init__(self, mesh, scale, textures):
         self.mesh = mesh
