@@ -30,15 +30,21 @@ class Part(object):
         self.md5Textures = []
         self.decals = []
 
+class TileUV(object):
+    def __init__(self, U, V):
+        self.TileU = U
+        self.TileV = V
+
 class Texture(object):
-    def __init__(self, textureDir, faceIndex, textureType):
+    def __init__(self, textureDir, faceIndex, textureType, tileUV: TileUV):
         self.textureDir = textureDir
         self.faceIdx = faceIndex
         self.type = textureType
+        self.tileUV = tileUV
 
 class TextureMd5(object):
-    def __init__(self, textureMd5, faceIdx):
-        self.textureMd5 = textureMd5
+    def __init__(self, md5, faceIdx):
+        self.md5 = md5
         self.faceIdx = faceIdx
 
 class Brick(object):
@@ -46,11 +52,6 @@ class Brick(object):
         self.mesh = mesh
         self.scale = scale
         self.textures = textures
-
-class TileUV(object):
-    def __init__(self, U, V):
-        self.TileU = U
-        self.TileV = V
 
 PartsList = []
 BrickList = []
@@ -134,8 +135,8 @@ def GetMaterialIndex(dir, mesh):
     return 0
 
 # Local texture which got duplicated from parts. Uses md5 hash of the copied texture for the name.
-def TextureDuplicated(TextureMd5, FaceIdx, part: Part):
-    part.md5Textures.append(TextureMd5(TextureMd5, FaceIdx))
+def TextureDuplicated(md5, faceIdx, part: Part):
+    part.md5Textures.append(TextureMd5(md5, faceIdx))
 
 # Convert Roblox face index to Blender.
 def GetFaceIndex(FaceIdx):
@@ -170,7 +171,7 @@ def GetLocalTexture(TextureXML, FaceIdx, part: Part, Type, AssetsDir):
     shutil.move(textureName, AssetsDir)
 
     textureDir = os.path.abspath(AssetsDir + "/" + textureName)
-    part.textures.append(Texture(textureDir, FaceIdx, Type))
+    part.textures.append(Texture(textureDir, FaceIdx, Type, TileUV(None, None)))
     localTexId += 1
     
 
@@ -206,7 +207,7 @@ def GetOnlineTexture(Link, FaceIdx, part: Part, Type, TileUV: TileUV, RobloxInst
             os.rename(r'tmp',r'' + assetFileName)
             shutil.move(assetFileName, AssetsDir)
             textureDir = os.path.abspath(AssetsDir + "/" + assetFileName)
-            part.textures.append(Texture(textureDir, FaceIdx, Type))
+            part.textures.append(Texture(textureDir, FaceIdx, Type, TileUV))
 
 def CreatePart(part: Part):
     if (part.brickType == 2):
@@ -446,13 +447,14 @@ class StartConverting(bpy.types.Operator):
         # Convert md5 hash to the texture path
         part: Part
         for part in PartsList:
-            for v in part.md5Textures:
-                md5Texture = v[0]
+            textureMd5: TextureMd5
+            for textureMd5 in part.md5Textures:
                 for TexturePath in TextureList:
-                    if(md5(TexturePath) == md5Texture):
+                    if(md5(TexturePath) == textureMd5.md5):
                         # Change md5 hash to texture path
-                        v[0] = TexturePath
-                        part.textures.append(v)
+                        # Should probably just add texture path as a variable within TextureMd5
+                        textureMd5.md5 = TexturePath
+                        part.textures.append(textureMd5)
 
         for part in PartsList:
             CreatePart(part)
@@ -461,8 +463,8 @@ class StartConverting(bpy.types.Operator):
         for obj in bpy.context.scene.objects:
             obj.select_set(True)
 
-        for i in  bpy.context.selected_objects:
-            i.rotation_euler.x = radians(90.0)
+        for obj_selected in bpy.context.selected_objects:
+            obj_selected.rotation_euler.x = radians(90.0)
 
         # Seperate top and bottom part of cylinder so smoothing looks good
         if CylinderList:
@@ -476,8 +478,8 @@ class StartConverting(bpy.types.Operator):
             bpy.ops.mesh.separate(type='SELECTED')
             bpy.ops.object.mode_set(mode='OBJECT')
 
-        for obj in bpy.context.scene.objects:
-            obj.select_set(False)
+        for obj_scene in bpy.context.scene.objects:
+            obj_scene.select_set(False)
 
         bpy.ops.object.mode_set(mode='OBJECT')
 
