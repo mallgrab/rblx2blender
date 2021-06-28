@@ -548,16 +548,25 @@ class StartConverting(bpy.types.Operator):
                             if (texture.faceIdx == idxFace):
                                 if (texture.type == 'Texture'):
                                     loop_uv = loop[uv_layer]
-                                    if (idxFace == 1 or idxFace == 3): # rotate that shit by 90
+                                    if (idxFace == 1 or idxFace == 3):
                                         if (idxLoop == 0):
-                                            loop_uv.uv = [0.0, (-brick.scale[2]/3) + 1.0]
+                                            loop_uv.uv = [brick.scale[0]/texture.tileUV.TileU, 1.0]
                                         if (idxLoop == 1):
                                             loop_uv.uv = [0.0, 1.0]
                                         if (idxLoop == 2):
-                                            loop_uv.uv = [brick.scale[0]/2, 1.0]
+                                            loop_uv.uv = [0.0, (-brick.scale[2]/texture.tileUV.TileV) + 1.0]
                                         if (idxLoop == 3):
-                                            loop_uv.uv = [brick.scale[0]/2, (-brick.scale[2]/3) + 1.0]
-                                    if (idxFace == 0 or idxFace == 2):
+                                            loop_uv.uv = [brick.scale[0]/texture.tileUV.TileU, (-brick.scale[2]/texture.tileUV.TileV) + 1.0]
+                                    if (idxFace == 0): # flip uv transforms on idxFace 2 if idxFace is 1
+                                        if (idxLoop == 0):
+                                            loop_uv.uv = [0.0, (-brick.scale[1]/texture.tileUV.TileV) + 1.0] # bottom left
+                                        if (idxLoop == 1):
+                                            loop_uv.uv = [(brick.scale[0]/texture.tileUV.TileU), (-brick.scale[1]/texture.tileUV.TileV) + 1.0] # bottom right
+                                        if (idxLoop == 2):
+                                            loop_uv.uv = [(brick.scale[0]/texture.tileUV.TileU), 1.0] # top right
+                                        if (idxLoop == 3):
+                                            loop_uv.uv = [0.0, 1.0] # top left
+                                    if (idxFace == 2):
                                         if (idxLoop == 0):
                                             loop_uv.uv = [(brick.scale[0]/texture.tileUV.TileU), 1.0]
                                         if (idxLoop == 1):
