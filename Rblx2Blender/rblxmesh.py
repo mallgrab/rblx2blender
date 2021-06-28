@@ -22,6 +22,13 @@ class Vertex():
         self.uv = uv
         self.vertex_color = vertex_color
 
+def Vector3Float(file: BufferedReader):
+    x = struct.unpack('<f', file.read(4))
+    y = struct.unpack('<f', file.read(4))
+    z = struct.unpack('<f', file.read(4))
+
+    return Vector3(x, y, z)
+
 def MeshReader(file: BufferedReader):
     file.read(1)
     mesh_version = float(file.read(4))
@@ -34,10 +41,15 @@ def MeshReader(file: BufferedReader):
     num_verts = int.from_bytes(file.read(4), "little")
     num_faces = int.from_bytes(file.read(4), "little")
 
-    pos_x = struct.unpack('<f', file.read(4))
-    pos_y = struct.unpack('<f', file.read(4))
-    pos_z = struct.unpack('<f', file.read(4))
-    print(pos_x, pos_y, pos_z)
+    position = Vector3Float(file)
+    normals = Vector3Float(file)
+    
+    uv_tmp = Vector3Float(file)
+    uv = Vector2(uv_tmp.x, uv_tmp.y)
+
+    print(position.x, position.y, position.z)
+    print(normals.x, normals.y, normals.z)
+    print(uv.x, uv.y)
 
 def OpenMeshFile(path):
     with open(path, "rb") as file:
