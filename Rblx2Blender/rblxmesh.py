@@ -4,6 +4,24 @@ import struct
 
 path = "./meshes/MeshTesting_V3"
 
+class Vector3():
+    def __init__(self, x: float, y: float, z: float):
+        self.x = x
+        self.y = y
+        self.z = z
+
+class Vector2():
+    def __init__(self, x: float, y: float):
+        self.x = x
+        self.y = y
+
+class Vertex():
+    def __init__(self, position: Vector3, normals: Vector3, uv: Vector2, vertex_color: int):
+        self.position = position
+        self.normals = normals
+        self.uv = uv
+        self.vertex_color = vertex_color
+
 def MeshReader(file: BufferedReader):
     file.read(1)
     mesh_version = float(file.read(4))
