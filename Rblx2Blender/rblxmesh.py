@@ -37,6 +37,13 @@ def Vector3Float(file: BufferedReader):
 
     return Vector3(x, y, z)
 
+def Vector3Int(file: BufferedReader):
+    x = int.from_bytes(file.read(4), "little")
+    y = int.from_bytes(file.read(4), "little")
+    z = int.from_bytes(file.read(4), "little")
+
+    return Vector3(x, y, z)
+
 def VertexColor(vertex_color: int):
     vertex_bytes = vertex_color.to_bytes(4, 'little')
 
@@ -59,7 +66,7 @@ def MeshReader(file: BufferedReader):
     num_faces = int.from_bytes(file.read(4), "little")
 
     vertex_list = []
-    for i in range(num_verts):
+    for _ in range(num_verts):
         position = Vector3Float(file)
         normals = Vector3Float(file)
 
@@ -71,7 +78,9 @@ def MeshReader(file: BufferedReader):
 
         vertex_list.append(Vertex(position, normals, uv, vertex_color))
 
-    print("done")
+    face_list = []
+    for _ in range(num_faces):
+        face_list.append(Vector3Int(file))
 
 def OpenMeshFile(path):
     with open(path, "rb") as file:
