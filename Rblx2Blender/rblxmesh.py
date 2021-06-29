@@ -31,9 +31,9 @@ class Vertex():
 
 
 def Vector3Float(file: BufferedReader):
-    x = struct.unpack('<f', file.read(4))
-    y = struct.unpack('<f', file.read(4))
-    z = struct.unpack('<f', file.read(4))
+    x = struct.unpack('<f', file.read(4))[0]
+    y = struct.unpack('<f', file.read(4))[0]
+    z = struct.unpack('<f', file.read(4))[0]
 
     return Vector3(x, y, z)
 
@@ -57,30 +57,34 @@ def MeshReader(file: BufferedReader):
     file.read(1)
     mesh_version = float(file.read(4))
     file.read(1)
-    file.read(2) # padding?
+    file.read(2)
     vertex_size = int.from_bytes(file.read(1), "little") 
-    file.read(1) # padding?
-    file.read(2) # padding?
+    file.read(1)
+    file.read(2)
     num_lods = int.from_bytes(file.read(2), "little")
     num_verts = int.from_bytes(file.read(4), "little")
     num_faces = int.from_bytes(file.read(4), "little")
 
     vertex_list = []
+    vertex_position_list = []
     for _ in range(num_verts):
         position = Vector3Float(file)
+        vertex_position_list.append([position.x, position.y, position.z])
+        
         normals = Vector3Float(file)
-
         uv_tmp = Vector3Float(file)
         uv = Vector2(uv_tmp.x, uv_tmp.y)
-
         color_argb = int.from_bytes(file.read(4), "little")
+        
         vertex_color = VertexColor(color_argb)
-
         vertex_list.append(Vertex(position, normals, uv, vertex_color))
 
-    face_list = []
+    vertex_face_list = []
     for _ in range(num_faces):
-        face_list.append(Vector3Int(file))
+        face_tuple = Vector3Int(file)
+        vertex_face_list.append([face_tuple.x, face_tuple.y, face_tuple.z])
+    
+    print("done")
 
 def OpenMeshFile(path):
     with open(path, "rb") as file:
