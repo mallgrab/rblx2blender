@@ -2,6 +2,8 @@ from copy import deepcopy
 from math import radians, degrees
 from typing import NamedTuple
 from collections import namedtuple
+from . rblx_legacy_color import BrickColor
+from . rblx_mesh import OpenMeshFile
 
 import xml.etree.ElementTree as ET
 import mathutils
@@ -14,7 +16,6 @@ import requests
 import imghdr
 import re
 import shutil
-from . rblx_legacy_color import BrickColor
 
 # debug
 import timeit
@@ -547,6 +548,8 @@ class StartConverting(bpy.types.Operator):
 
                             if (texture.faceIdx == idxFace):
                                 if (texture.type == 'Texture'):
+                                    if texture.tileUV.TileU == None:
+                                        continue
                                     loop_uv = loop[uv_layer]
                                     if (idxFace == 1 or idxFace == 3):
                                         if (idxLoop == 0):
@@ -587,7 +590,19 @@ class StartConverting(bpy.types.Operator):
                                     else:
                                         continue
                 bm.to_mesh(brick.mesh)
+        
+        # gen mesh
+        mesh = OpenMeshFile("./meshes/MeshTesting_V3")
 
+        mesh_data = bpy.data.meshes.new("cube_mesh_data")
+        mesh_data.from_pydata(mesh[0], [], mesh[1])
+        mesh_data.update()
+
+        obj = bpy.data.objects.new("My_Object", mesh_data)
+            
+        scene = bpy.context.scene
+        scene.collection.objects.link(obj)
+        
         timer += (timeit.default_timer() - start)
         print("done", timer)
         return {'FINISHED'}

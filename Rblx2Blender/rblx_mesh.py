@@ -84,12 +84,10 @@ def MeshReader(file: BufferedReader):
         face_tuple = Vector3Int(file)
         vertex_face_list.append([face_tuple.x, face_tuple.y, face_tuple.z])
     
-    print("done")
+    return [vertex_position_list, vertex_face_list]
 
-def OpenMeshFile(path):
+def OpenMeshFile(path: str):
     with open(path, "rb") as file:
         version_string = file.read(7)
         if (version_string.decode("utf-8") == 'version'):
-            MeshReader(file)
-
-OpenMeshFile(path)
+            return MeshReader(file)
