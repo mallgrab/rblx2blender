@@ -55,15 +55,28 @@ def VertexColor(vertex_color: int):
 
 def MeshReader(file: BufferedReader):
     file.read(1)
+    
     mesh_version = float(file.read(4))
+    if (mesh_version < 3.00):
+        print("mesh version above 3 not supported")
+
     file.read(1)
-    file.read(2)
+    
+    header_size = int.from_bytes(file.read(2), "little")
     vertex_size = int.from_bytes(file.read(1), "little") 
-    file.read(1)
-    file.read(2)
-    num_lods = int.from_bytes(file.read(2), "little")
-    num_verts = int.from_bytes(file.read(4), "little")
-    num_faces = int.from_bytes(file.read(4), "little")
+    
+    if (header_size == 16):
+        file.read(1)
+        file.read(2)
+        num_lods = int.from_bytes(file.read(2), "little") # lods could be implemented later for example for unity.
+        num_verts = int.from_bytes(file.read(4), "little")
+        num_faces = int.from_bytes(file.read(4), "little")
+    
+    if (header_size == 12):
+        file.read(1)
+        num_verts = int.from_bytes(file.read(4), "little")
+        num_faces = int.from_bytes(file.read(4), "little")
+
 
     vertex_list = []
     vertex_position_list = []
@@ -74,9 +87,14 @@ def MeshReader(file: BufferedReader):
         normals = Vector3Float(file)
         uv_tmp = Vector3Float(file)
         uv = Vector2(uv_tmp.x, uv_tmp.y)
-        color_argb = int.from_bytes(file.read(4), "little")
         
-        vertex_color = VertexColor(color_argb)
+        if (vertex_size == 16):
+            color_argb = int.from_bytes(file.read(4), "little")
+            vertex_color = VertexColor(color_argb)
+        else:
+            color_white = 4294967295 # 255 255 255 255
+            vertex_color = color_white
+
         vertex_list.append(Vertex(position, normals, uv, vertex_color))
 
     vertex_face_list = []

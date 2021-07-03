@@ -592,7 +592,7 @@ class StartConverting(bpy.types.Operator):
                 bm.to_mesh(brick.mesh)
         
         # gen mesh
-        mesh = OpenMeshFile("./meshes/MeshTesting_V3")
+        mesh = OpenMeshFile("./meshes/MeshTesting_V2")
 
         mesh_data = bpy.data.meshes.new("cube_mesh_data")
         mesh_data.from_pydata(mesh[0], [], mesh[1])
