@@ -1,6 +1,8 @@
 from io import BufferedReader
 from array import array
+
 import struct
+import ast
 
 path = "./meshes/MeshTesting_V3"
 
@@ -53,11 +55,50 @@ def VertexColor(vertex_color: int):
     b = vertex_bytes[3]
     return Color_ARGB(a, r, g, b)
 
+def GetTotalVertices(file: BufferedReader):
+    file.read(2)
+    byte_array = bytearray()
+    while True:
+        tmp_byte = file.read(1)
+        if (tmp_byte.decode() == "\r"):
+            file.read(1)
+            break
+        else:
+            byte_array.extend(tmp_byte)
+    num_verts = int(byte_array.decode('ascii'))
+    return(num_verts)
+
+def GetBracketArray(file: BufferedReader):
+    byte_array = bytearray()
+    while True:
+        tmp_byte = file.read(1)
+        if (tmp_byte.decode() == "]"):
+            byte_array.extend(tmp_byte)
+            break
+        else:
+            byte_array.extend(tmp_byte)
+    bracket_array = ast.literal_eval(byte_array.decode('ascii'))
+    return(bracket_array)
+
 def MeshReader(file: BufferedReader):
     file.read(1)
     
     mesh_version = float(file.read(4))
-    if (mesh_version < 3.00):
+    if (mesh_version < 2.00):
+        vertex_position_list = []
+        vertex_face_list = []
+        num_verts = GetTotalVertices(file) * 3
+        
+        for _ in range(num_verts):
+            position = GetBracketArray(file)
+            vertex_position_list.append(position)
+            normals = GetBracketArray(file)
+            uv = GetBracketArray(file)[:-1]
+        
+        return [vertex_position_list, vertex_face_list]
+
+
+    if (mesh_version > 3.00):
         print("mesh version above 3 not supported")
 
     file.read(1)
@@ -88,7 +129,7 @@ def MeshReader(file: BufferedReader):
         uv_tmp = Vector3Float(file)
         uv = Vector2(uv_tmp.x, uv_tmp.y)
         
-        if (vertex_size == 16):
+        if (vertex_size == 40):
             color_argb = int.from_bytes(file.read(4), "little")
             vertex_color = VertexColor(color_argb)
         else:

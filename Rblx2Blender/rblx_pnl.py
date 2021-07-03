@@ -1,8 +1,8 @@
 import bpy
 from bpy.types import Panel
 
-RobloxPlace = r'C:\Users\win-spike\Desktop\rbxl2obj\Pirate.rbxl'
-RobloxInstallLocation = r'C:\Users\win-spike\Documents\CnCRemastered\roblox2008\content'
+RobloxPlace = r'/home/user/Desktop/rblx2blender/UV.rbxlx'
+RobloxInstallLocation = r'/home/user/Desktop/rblx2blender/Roblox-2009-Client-master/content'
 
 PlacePath = ""
 InstallPath = ""
