@@ -56,12 +56,18 @@ def VertexColor(vertex_color: int):
     return Color_ARGB(a, r, g, b)
 
 def GetTotalVertices(file: BufferedReader):
-    file.read(2)
+    tmp_byte = file.read(1)
+    if (tmp_byte.decode() == "\n"):
+        pass
+    else:
+        file.read(1) # CR LF
     byte_array = bytearray()
     while True:
         tmp_byte = file.read(1)
-        if (tmp_byte.decode() == "\r"):
+        if (tmp_byte.decode() == "\r"): # CR LF
             file.read(1)
+            break
+        elif (tmp_byte.decode() == "\n"):
             break
         else:
             byte_array.extend(tmp_byte)
