@@ -592,16 +592,35 @@ class StartConverting(bpy.types.Operator):
                 bm.to_mesh(brick.mesh)
         
         # gen mesh (ver 2, 3+)
-        mesh = OpenMeshFile("./meshes/MeshTesting_V3")
+        mesh_vertices = OpenMeshFile("./meshes/MeshTesting_V3")
 
         mesh_data = bpy.data.meshes.new("cube_mesh_data")
-        mesh_data.from_pydata(mesh[0], [], mesh[1])
+        mesh_data.from_pydata(mesh_vertices[0], [], mesh_vertices[1])
         mesh_data.update()
 
         obj = bpy.data.objects.new("My_Object", mesh_data)
             
         scene = bpy.context.scene
         scene.collection.objects.link(obj)
+
+        mesh = bpy.data.meshes.new('Part_Brick')
+        basic_brick = bpy.data.objects.new("Part_Brick", mesh)
+
+        bpy.context.collection.objects.link(basic_brick)
+        bm = bmesh.new()
+
+        counter = len(mesh_vertices[0] + 1) / 3
+        for idx, vertex_pos in enumerate(counter):
+            print(mesh_vertices[0][idx], mesh_vertices[0][idx], mesh_vertices[0][idx])
+        
+        t_v1 = bm.verts.new((2.0, 2.0, 2.0)) # the created vertex
+        t_v2 = bm.verts.new((-2.0, 2.0, 2.0))
+        t_v3 = bm.verts.new((-2.0, -2.0, 2.0))
+
+        bm.faces.new([t_v1, t_v2, t_v3])
+
+        bm.to_mesh(mesh)
+        bm.free()
         
         timer += (timeit.default_timer() - start)
         print("done", timer)
