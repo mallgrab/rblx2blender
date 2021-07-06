@@ -127,6 +127,7 @@ def MeshReader(file: BufferedReader):
 
     vertex_list = []
     vertex_position_list = []
+    vertex_uv_list = []
     for _ in range(num_verts):
         position = Vector3Float(file)
         vertex_position_list.append([position.x, position.y, position.z])
@@ -134,6 +135,7 @@ def MeshReader(file: BufferedReader):
         normals = Vector3Float(file)
         uv_tmp = Vector3Float(file)
         uv = Vector2(uv_tmp.x, uv_tmp.y)
+        vertex_uv_list.append([uv_tmp.x, uv_tmp.y])
         
         if (vertex_size == 40):
             color_argb = int.from_bytes(file.read(4), "little")
@@ -149,7 +151,7 @@ def MeshReader(file: BufferedReader):
         face_tuple = Vector3Int(file)
         vertex_face_list.append([face_tuple.x, face_tuple.y, face_tuple.z])
     
-    return [vertex_position_list, vertex_face_list]
+    return [vertex_position_list, vertex_face_list, vertex_uv_list]
 
 def OpenMeshFile(path: str):
     with open(path, "rb") as file:
