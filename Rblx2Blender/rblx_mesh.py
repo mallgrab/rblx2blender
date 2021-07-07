@@ -3,6 +3,8 @@ from array import array
 
 import struct
 import ast
+import bmesh
+import bpy
 
 path = "./meshes/MeshTesting_V3"
 
@@ -31,12 +33,12 @@ class Vertex():
         self.uv = uv
         self.vertex_color = vertex_color
 
-class Mesh():
+class MeshData():
     def __init__(self, vertex_positions: list, vertex_faces: list, vertex_uvs: list, version: str):
         self.vertex_positions = vertex_positions
         self.vertex_faces = vertex_faces
         self.vertex_uvs = vertex_uvs
-        self.version = "0.0"
+        self.version = version
 
 class MeshHeader():
     header_size = 0
@@ -131,15 +133,19 @@ def MeshReader(file: BufferedReader):
     if (mesh_version < 2.00):
         vertex_position_list = []
         vertex_face_list = []
+        vertex_uv_list = []
         num_verts = GetTotalVertices(file) * 3
         
         for _ in range(num_verts):
             position = GetBracketArray(file)
             vertex_position_list.append(position)
+            
             normals = GetBracketArray(file)
             uv = GetBracketArray(file)[:-1]
+            vertex_uv_list.append(uv)
         
-        return [vertex_position_list, vertex_face_list]
+        #return [vertex_position_list, vertex_face_list]
+        return MeshData(vertex_position_list, vertex_face_list, vertex_uv_list, mesh_version)
 
     if (mesh_version > 3.00):
         print("mesh version above 3 not supported")
@@ -173,13 +179,50 @@ def MeshReader(file: BufferedReader):
         face_tuple = Vector3Int(file)
         vertex_face_list.append([face_tuple.x, face_tuple.y, face_tuple.z])
     
-    return [vertex_position_list, vertex_face_list, vertex_uv_list]
+    return MeshData(vertex_position_list, vertex_face_list, vertex_uv_list, mesh_version)
 
-def OpenMeshFile(path: str):
+def OpenMeshFromFile(path: str):
     with open(path, "rb") as file:
         version_string = file.read(7)
         if (version_string.decode("utf-8") == 'version'):
             return MeshReader(file)
 
-def GetMeshFile(path: str):
-    mesh_data = OpenMeshFile(path)
+def GetMeshFromFile(path: str):
+    """
+        mesh_uv_layer = mesh_data.uv_layers.new()
+        
+        #for loop in bpy.context.active_object.data.loops:
+        #    mesh_uv_layer.data[loop.index].uv = mesh_vertices[2][loop.index]
+
+        # https://docs.blender.org/api/current/bpy.types.MeshUVLoopLayer.html#bpy.types.MeshUVLoopLayer
+    """
+    mesh_data = OpenMeshFromFile(path)
+
+    if (mesh_data.version < 2.00):
+        mesh = bpy.data.meshes.new('Mesh_1_00')
+        basic_brick = bpy.data.objects.new("Part_Brick", mesh)
+        bpy.context.collection.objects.link(basic_brick)
+        bm = bmesh.new()
+
+        counter = len(mesh_data.vertex_positions)
+        idx = 0
+        while idx < int(counter):
+            t_v1 = bm.verts.new(mesh_data.vertex_positions[idx])
+            t_v2 = bm.verts.new(mesh_data.vertex_positions[idx+1])
+            t_v3 = bm.verts.new(mesh_data.vertex_positions[idx+2])
+            bm.faces.new([t_v1, t_v2, t_v3])
+            idx += 3
+        
+        bm.to_mesh(mesh)
+        bm.free()
+    else:
+        mesh = bpy.data.meshes.new("Mesh_2_00")
+        mesh.from_pydata(mesh_data.vertex_positions, [], mesh_data.vertex_faces)
+        mesh.update()
+
+        obj = bpy.data.objects.new("My_Object", mesh)
+
+        scene = bpy.context.scene
+        scene.collection.objects.link(obj)
+
+    return mesh

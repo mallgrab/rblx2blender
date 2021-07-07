@@ -3,7 +3,7 @@ from math import radians, degrees
 from typing import NamedTuple
 from collections import namedtuple
 from . rblx_legacy_color import BrickColor
-from . rblx_mesh import OpenMeshFile
+from . rblx_mesh import GetMeshFromFile
 
 import xml.etree.ElementTree as ET
 import mathutils
@@ -591,47 +591,7 @@ class StartConverting(bpy.types.Operator):
                                         continue
                 bm.to_mesh(brick.mesh)
         
-        # gen mesh (ver 2, 3+)
-        mesh_vertices = OpenMeshFile("./meshes/MeshTesting_V3")
-        
-        mesh_data = bpy.data.meshes.new("cube_mesh_data")
-        mesh_uv_layer = mesh_data.uv_layers.new()
-        
-        #for loop in bpy.context.active_object.data.loops:
-        #    mesh_uv_layer.data[loop.index].uv = mesh_vertices[2][loop.index]
-
-        # https://docs.blender.org/api/current/bpy.types.MeshUVLoopLayer.html#bpy.types.MeshUVLoopLayer
-
-        mesh_data.from_pydata(mesh_vertices[0], [], mesh_vertices[1])
-        mesh_data.update()
-        
-        obj = bpy.data.objects.new("My_Object", mesh_data)
-        
-        scene = bpy.context.scene
-        scene.collection.objects.link(obj)
-        
-        """ gen mesh (ver 1, 1.01 etc)
-        mesh = bpy.data.meshes.new('Part_Brick')
-        basic_brick = bpy.data.objects.new(
-            "Part_Brick", mesh)
-
-        bpy.context.collection.objects.link(basic_brick)
-        bm = bmesh.new()
-
-        counter = len(mesh_vertices[0])
-
-        idx = 0
-        while idx < int(counter):
-            #print(mesh_vertices[0][idx], mesh_vertices[0][idx+1], mesh_vertices[0][idx+2])
-            t_v1 = bm.verts.new(mesh_vertices[0][idx])
-            t_v2 = bm.verts.new(mesh_vertices[0][idx+1])
-            t_v3 = bm.verts.new(mesh_vertices[0][idx+2])
-            bm.faces.new([t_v1, t_v2, t_v3])
-            idx += 3
-
-        bm.to_mesh(mesh)
-        bm.free()
-        """
+        GetMeshFromFile("./meshes/MeshTesting_V1_00")
         
         timer += (timeit.default_timer() - start)
         print("done", timer)
