@@ -38,23 +38,6 @@ class Mesh():
         self.vertex_uvs = vertex_uvs
         self.version = "0.0"
 
-"""
-header_size = int.from_bytes(file.read(2), "little")
-    vertex_size = int.from_bytes(file.read(1), "little") 
-    
-    if (header_size == 16):
-        file.read(1)
-        file.read(2)
-        num_lods = int.from_bytes(file.read(2), "little") # lods could be implemented later for example for unity.
-        num_verts = int.from_bytes(file.read(4), "little")
-        num_faces = int.from_bytes(file.read(4), "little")
-    
-    if (header_size == 12):
-        file.read(1)
-        num_verts = int.from_bytes(file.read(4), "little")
-        num_faces = int.from_bytes(file.read(4), "little")
-"""
-
 class MeshHeader():
     header_size = 0
     vertex_size = 0
@@ -166,6 +149,8 @@ def MeshReader(file: BufferedReader):
     vertex_list = []
     vertex_position_list = []
     vertex_uv_list = []
+    vertex_face_list = []
+    
     for _ in range(mesh_header.num_verts):
         position = Vector3Float(file)
         vertex_position_list.append([position.x, position.y, position.z])
@@ -184,7 +169,6 @@ def MeshReader(file: BufferedReader):
 
         vertex_list.append(Vertex(position, normals, uv, vertex_color))
 
-    vertex_face_list = []
     for _ in range(mesh_header.num_faces):
         face_tuple = Vector3Int(file)
         vertex_face_list.append([face_tuple.x, face_tuple.y, face_tuple.z])
