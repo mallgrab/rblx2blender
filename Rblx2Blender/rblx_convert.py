@@ -593,6 +593,7 @@ class StartConverting(bpy.types.Operator):
         
         # gen mesh (ver 2, 3+)
         mesh_vertices = OpenMeshFile("./meshes/MeshTesting_V3")
+        
         mesh_data = bpy.data.meshes.new("cube_mesh_data")
         mesh_uv_layer = mesh_data.uv_layers.new()
         
