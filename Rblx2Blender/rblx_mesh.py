@@ -198,7 +198,7 @@ def GetMeshFromFile(path: str):
     """
     mesh_data = OpenMeshFromFile(path)
 
-    if (mesh_data.version < 2.00):
+    if (mesh_data.version <= 1.99):
         mesh = bpy.data.meshes.new('Mesh_1_00')
         basic_brick = bpy.data.objects.new("Part_Brick", mesh)
         bpy.context.collection.objects.link(basic_brick)
@@ -215,7 +215,7 @@ def GetMeshFromFile(path: str):
         
         bm.to_mesh(mesh)
         bm.free()
-    else:
+    elif (mesh_data.version >= 2.00):
         mesh = bpy.data.meshes.new("Mesh_2_00")
         mesh.from_pydata(mesh_data.vertex_positions, [], mesh_data.vertex_faces)
         mesh.update()
