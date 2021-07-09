@@ -592,6 +592,7 @@ class StartConverting(bpy.types.Operator):
                 bm.to_mesh(brick.mesh)
         
         GetMeshFromFile("./meshes/MeshTesting_V1_00")
+        #GetMeshFromFile("./meshes/MeshTesting_V3")
         
         timer += (timeit.default_timer() - start)
         print("done", timer)
