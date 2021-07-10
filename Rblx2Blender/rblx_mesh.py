@@ -34,11 +34,12 @@ class Vertex():
         self.vertex_color = vertex_color
 
 class MeshData():
-    def __init__(self, vertex_positions: list, vertex_faces: list, vertex_uvs: list, vertex_normals: list, version: str):
+    def __init__(self, vertex_positions: list, vertex_faces: list, vertex_uvs: list, vertex_normals: list, vertex_lods: list, version: str):
         self.vertex_positions = vertex_positions
         self.vertex_faces = vertex_faces
         self.vertex_uvs = vertex_uvs
         self.vertex_normals = vertex_normals
+        self.vertex_lods = vertex_lods
         self.version = version
 
 class MeshHeader():
@@ -53,14 +54,14 @@ def Vector3Float(file: BufferedReader):
     y = struct.unpack('<f', file.read(4))[0]
     z = struct.unpack('<f', file.read(4))[0]
 
-    return Vector3(x, y, z)
+    return [x, y, z]
 
 def Vector3Int(file: BufferedReader):
     x = int.from_bytes(file.read(4), "little")
     y = int.from_bytes(file.read(4), "little")
     z = int.from_bytes(file.read(4), "little")
 
-    return Vector3(x, y, z)
+    return [x, y, z]
 
 def VertexColor(vertex_color: int):
     vertex_bytes = vertex_color.to_bytes(4, 'little')
@@ -130,13 +131,16 @@ def GetHeaderInformation(file: BufferedReader):
 
 def MeshReader(file: BufferedReader):
     mesh_version = GetMeshVersion(file)
-    vertex_list = []
     vertex_positions = []
     vertex_faces = []
     vertex_uvs = []
     vertex_normals = []
+    vertex_lods = []
+
+    if (mesh_version > 3.00):
+        print("mesh version above 3 not supported")
     
-    if (mesh_version < 2.00):
+    if (mesh_version <= 1.99):
         num_verts = GetTotalVertices(file) * 3
         
         for _ in range(num_verts):
@@ -149,21 +153,19 @@ def MeshReader(file: BufferedReader):
             uv = GetBracketArray(file)[:-1] # we only need x and y
             vertex_uvs.append(uv)
         
-        return MeshData(vertex_positions, vertex_faces, vertex_uvs, vertex_normals, mesh_version)
-
-    if (mesh_version > 3.00):
-        print("mesh version above 3 not supported")
+        return MeshData(vertex_positions, vertex_faces, vertex_uvs, vertex_normals, vertex_lods, mesh_version)
 
     mesh_header = GetHeaderInformation(file)
     
     for _ in range(mesh_header.num_verts):
         position = Vector3Float(file)
-        vertex_positions.append([position.x, position.y, position.z])
+        vertex_positions.append(position)
         
         normals = Vector3Float(file)
-        uv_tmp = Vector3Float(file)
-        uv = Vector2(uv_tmp.x, uv_tmp.y)
-        vertex_uvs.append([uv_tmp.x, uv_tmp.y])
+        vertex_normals.append(normals)
+        
+        uv_tmp = Vector3Float(file)[:-1]
+        vertex_uvs.append(uv_tmp)
         
         if (mesh_header.vertex_size == 40):
             color_argb = int.from_bytes(file.read(4), "little")
@@ -172,13 +174,16 @@ def MeshReader(file: BufferedReader):
             color_white = 4294967295 # ARGB [255 255 255 255]
             vertex_color = color_white
 
-        vertex_list.append(Vertex(position, normals, uv, vertex_color))
-
     for _ in range(mesh_header.num_faces):
         face_tuple = Vector3Int(file)
-        vertex_faces.append([face_tuple.x, face_tuple.y, face_tuple.z])
+        vertex_faces.append(face_tuple)
+
+    empty = file.read(4)
+    for _ in range(mesh_header.num_lods):
+        lod = int.from_bytes(file.read(4), "little")
+        vertex_lods.append(lod)
     
-    return MeshData(vertex_positions, vertex_faces, vertex_uvs, vertex_normals, mesh_version)
+    return MeshData(vertex_positions, vertex_faces, vertex_uvs, vertex_normals, vertex_lods, mesh_version)
 
 def OpenMeshFromFile(path: str):
     with open(path, "rb") as file:
@@ -187,26 +192,17 @@ def OpenMeshFromFile(path: str):
             return MeshReader(file)
 
 def GetMeshFromFile(path: str):
-    """
-        mesh_uv_layer = mesh_data.uv_layers.new()
-        
-        #for loop in bpy.context.active_object.data.loops:
-        #    mesh_uv_layer.data[loop.index].uv = mesh_vertices[2][loop.index]
-
-        # https://docs.blender.org/api/current/bpy.types.MeshUVLoopLayer.html#bpy.types.MeshUVLoopLayer
-    """
     mesh_data = OpenMeshFromFile(path)
+    mesh_name = 'Mesh_' + str(mesh_data.version)
+    mesh = bpy.data.meshes.new('mesh')
+    
+    basic_brick = bpy.data.objects.new(mesh_name, mesh)
+    bpy.context.collection.objects.link(basic_brick)
+    
+    bm = bmesh.new()
+    bm.from_mesh(mesh)
 
     if (mesh_data.version <= 1.99):
-        v = 'Mesh_' + str(mesh_data.version)
-        mesh = bpy.data.meshes.new('Mesh_' + str(mesh_data.version))
-        mesh_uv_layer = mesh.uv_layers.new(name="MeshUV")
-        
-        basic_brick = bpy.data.objects.new("Part_Mesh", mesh)
-        bpy.context.collection.objects.link(basic_brick)
-        
-        bm = bmesh.new()
-        bm.from_mesh(mesh)
 
         idx = 0
         while idx < int(len(mesh_data.vertex_positions)):
@@ -229,15 +225,32 @@ def GetMeshFromFile(path: str):
 
         bm.to_mesh(mesh)
         bm.free()
-    elif (mesh_data.version >= 2.00):
-        mesh = bpy.data.meshes.new('Mesh_' + str(mesh_data.version))
+    elif (mesh_data.version >= 2.00): 
+        for idx, face in enumerate(mesh_data.vertex_faces):
+            t_v1 = bm.verts.new(mesh_data.vertex_positions[face[0]])
+            t_v2 = bm.verts.new(mesh_data.vertex_positions[face[1]])
+            t_v3 = bm.verts.new(mesh_data.vertex_positions[face[2]])
+            bm.faces.new([t_v1, t_v2, t_v3])
+            if idx == mesh_data.vertex_lods[0]-1: # skip remaining faces, get highest lod mesh
+                break
         
-        # replace this where we construct the mesh from the face array information of mesh_data
-        # the reason for it is so that we can define normal & uv per vertex since from_pydata doesn't allow it
-        mesh.from_pydata(mesh_data.vertex_positions, [], mesh_data.vertex_faces)
-        mesh.update()
+        uv_layer = bm.loops.layers.uv.verify()
+        bm.faces.ensure_lookup_table()
 
-        basic_brick = bpy.data.objects.new("Part_Mesh", mesh)
-        bpy.context.collection.objects.link(basic_brick)
+        for idx, face in enumerate(bm.faces):
+            face_data = mesh_data.vertex_faces[idx]
+            #face.normal = mesh_data.vertex_normals[idx]
+            for vertex_idx, loop in enumerate(face.loops):
+                current_vertex_uv = mesh_data.vertex_uvs[face_data[vertex_idx]]
+                loop_uv = loop[uv_layer]
+                loop_uv.uv = current_vertex_uv
+
+        bm.to_mesh(mesh)
+        bm.free()
+
+        """
+        for i in mesh.vertices:
+            d = i
+        """
 
     return mesh
