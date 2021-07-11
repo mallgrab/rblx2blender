@@ -230,6 +230,11 @@ def GetMeshFromFile(path: str):
             t_v1 = bm.verts.new(mesh_data.vertex_positions[face[0]])
             t_v2 = bm.verts.new(mesh_data.vertex_positions[face[1]])
             t_v3 = bm.verts.new(mesh_data.vertex_positions[face[2]])
+            
+            t_v1.normal = mesh_data.vertex_normals[face[0]]
+            t_v2.normal = mesh_data.vertex_normals[face[1]]
+            t_v3.normal = mesh_data.vertex_normals[face[2]]
+            
             bm.faces.new([t_v1, t_v2, t_v3])
             if idx == mesh_data.vertex_lods[0]-1: # skip remaining faces, get highest lod mesh
                 break
