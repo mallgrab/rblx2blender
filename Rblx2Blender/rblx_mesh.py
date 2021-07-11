@@ -253,9 +253,4 @@ def GetMeshFromFile(path: str):
         bm.to_mesh(mesh)
         bm.free()
 
-        """
-        for i in mesh.vertices:
-            d = i
-        """
-
     return mesh
