@@ -192,6 +192,8 @@ def OpenMeshFromFile(path: str):
             return MeshReader(file)
 
 def GetMeshFromFile(path: str):
+    # https://stackoverflow.com/questions/744373/circular-or-cyclic-imports-in-python
+    from . rblx_convert import CreateMaterialWithTexture
     mesh_data = OpenMeshFromFile(path)
     mesh_name = 'Mesh_' + str(mesh_data.version)
     mesh = bpy.data.meshes.new('mesh')
@@ -250,6 +252,7 @@ def GetMeshFromFile(path: str):
                 loop_uv = loop[uv_layer]
                 loop_uv.uv = current_vertex_uv
 
+        mesh.materials.append(CreateMaterialWithTexture("/home/user/Desktop/rblx2blender/Rblx2Blender/meshes/MeshTesting_V3.png"))
         bm.to_mesh(mesh)
         bm.free()
 
