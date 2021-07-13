@@ -131,6 +131,7 @@ dmypy.json
 .pyre/
 
 # From downloading assets
+!./Rblx2Blender/meshes/*
 *.png
 *.jpeg
 *.rbxl
