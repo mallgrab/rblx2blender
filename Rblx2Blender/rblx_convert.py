@@ -591,8 +591,8 @@ class StartConverting(bpy.types.Operator):
                                         continue
                 bm.to_mesh(brick.mesh)
         
-        test_texture = "/home/user/Desktop/rblx2blender/Rblx2Blender/meshes/MeshTesting_V3.png"
-        mesh = GetMeshFromFile("./meshes/MeshTesting_V3")
+        test_texture = "/home/user/Desktop/rblx2blender/Rblx2Blender/meshes/MeshTesting_V4.png"
+        mesh = GetMeshFromFile("./meshes/MeshTesting_V4")
         mesh.materials.append(CreateMaterialWithTexture(test_texture))
         
         timer += (timeit.default_timer() - start)

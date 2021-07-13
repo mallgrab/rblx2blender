@@ -48,6 +48,8 @@ class MeshHeader():
     num_lods = 0
     num_faces = 0
     num_verts = 0
+    num_meshes = 0
+    num_bones = 0
 
 def Vector3Float(file: BufferedReader):
     x = struct.unpack('<f', file.read(4))[0]
@@ -108,26 +110,40 @@ def GetMeshVersion(file: BufferedReader):
     mesh_version = float(file.read(4))
     return mesh_version
 
-def GetHeaderInformation(file: BufferedReader):
+def GetHeaderInformation(file: BufferedReader, mesh_version: float):
     file.read(1) # Space
-
     mesh_header = MeshHeader()
-    
     mesh_header.header_size = int.from_bytes(file.read(2), "little")
-    mesh_header.vertex_size = int.from_bytes(file.read(1), "little") 
-    
-    file.read(1) # LF
-    if (mesh_header.header_size == 16):
-        file.read(2) # CR
-        mesh_header.num_lods = int.from_bytes(file.read(2), "little") # lods could be implemented later.
-        mesh_header.num_verts = int.from_bytes(file.read(4), "little")
-        mesh_header.num_faces = int.from_bytes(file.read(4), "little")
-    
-    if (mesh_header.header_size == 12):
-        mesh_header.num_verts = int.from_bytes(file.read(4), "little")
-        mesh_header.num_faces = int.from_bytes(file.read(4), "little")
 
-    return mesh_header
+    if (mesh_version <= 3.00):
+        mesh_header.vertex_size = int.from_bytes(file.read(1), "little") 
+
+        file.read(1) # LF
+        if (mesh_header.header_size == 16):
+            file.read(2) # CR
+            mesh_header.num_lods = int.from_bytes(file.read(2), "little")
+            mesh_header.num_verts = int.from_bytes(file.read(4), "little")
+            mesh_header.num_faces = int.from_bytes(file.read(4), "little")
+
+        if (mesh_header.header_size == 12):
+            mesh_header.num_verts = int.from_bytes(file.read(4), "little")
+            mesh_header.num_faces = int.from_bytes(file.read(4), "little")
+
+        return mesh_header
+   
+    elif (mesh_version <= 4.00):
+        mesh_header.num_meshes = int.from_bytes(file.read(2), "little") 
+        mesh_header.num_verts = int.from_bytes(file.read(4), "little")
+        mesh_header.num_faces = int.from_bytes(file.read(4), "little")
+        mesh_header.num_lods = int.from_bytes(file.read(2), "little") 
+        mesh_header.num_bones = int.from_bytes(file.read(2), "little")
+        
+        file.read(4) # nameTableSize
+        file.read(2) # unknown
+        file.read(2) # numSkinData
+
+        return mesh_header
+
 
 def MeshReader(file: BufferedReader):
     mesh_version = GetMeshVersion(file)
@@ -136,9 +152,6 @@ def MeshReader(file: BufferedReader):
     vertex_uvs = []
     vertex_normals = []
     vertex_lods = []
-
-    if (mesh_version > 3.00):
-        print("mesh version above 3 not supported")
     
     if (mesh_version <= 1.99):
         num_verts = GetTotalVertices(file) * 3
@@ -155,7 +168,7 @@ def MeshReader(file: BufferedReader):
         
         return MeshData(vertex_positions, vertex_faces, vertex_uvs, vertex_normals, vertex_lods, mesh_version)
 
-    mesh_header = GetHeaderInformation(file)
+    mesh_header = GetHeaderInformation(file, mesh_version)
     
     for _ in range(mesh_header.num_verts):
         position = Vector3Float(file)
@@ -168,12 +181,17 @@ def MeshReader(file: BufferedReader):
         uv = [uv[0], -abs(uv[1])+1.0] # y is upside down
         vertex_uvs.append(uv)
         
-        if (mesh_header.vertex_size == 40):
+        if (mesh_header.vertex_size == 40 or mesh_version <= 4.00):
             color_argb = int.from_bytes(file.read(4), "little")
             vertex_color = VertexColor(color_argb)
         else:
             color_white = 4294967295 # ARGB [255 255 255 255]
             vertex_color = color_white
+
+    if (mesh_header.num_bones > 0):
+        for _ in range(mesh_header.num_verts):
+            file.read(4) # byte bones[4];
+            file.read(4) # byte weights[4];
 
     for _ in range(mesh_header.num_faces):
         face_tuple = Vector3Int(file)
@@ -193,7 +211,6 @@ def OpenMeshFromFile(path: str):
             return MeshReader(file)
 
 def GetMeshFromFile(path: str):
-    # https://stackoverflow.com/questions/744373/circular-or-cyclic-imports-in-python
     mesh_data = OpenMeshFromFile(path)
     mesh_name = 'Mesh_' + str(mesh_data.version)
     mesh = bpy.data.meshes.new('mesh')
@@ -205,7 +222,6 @@ def GetMeshFromFile(path: str):
     bm.from_mesh(mesh)
 
     if (mesh_data.version <= 1.99):
-
         idx = 0
         while idx < int(len(mesh_data.vertex_positions)):
             t_v1 = bm.verts.new(mesh_data.vertex_positions[idx])
@@ -227,6 +243,7 @@ def GetMeshFromFile(path: str):
 
         bm.to_mesh(mesh)
         bm.free()
+    
     elif (mesh_data.version >= 2.00): 
         for idx, face in enumerate(mesh_data.vertex_faces):
             t_v1 = bm.verts.new(mesh_data.vertex_positions[face[0]])
@@ -246,7 +263,6 @@ def GetMeshFromFile(path: str):
 
         for idx, face in enumerate(bm.faces):
             face_data = mesh_data.vertex_faces[idx]
-            #face.normal = mesh_data.vertex_normals[idx]
             for vertex_idx, loop in enumerate(face.loops):
                 current_vertex_uv = mesh_data.vertex_uvs[face_data[vertex_idx]]
                 loop_uv = loop[uv_layer]
