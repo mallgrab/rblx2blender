@@ -2,8 +2,13 @@ from copy import deepcopy
 from math import radians, degrees
 from typing import NamedTuple
 from collections import namedtuple
-from . rblx_legacy_color import BrickColor
-from . rblx_mesh import GetMeshFromFile
+
+from . legacycolors import BrickColor
+
+#import mesh as rbxmesh
+#import assetreader as assetreader
+from . assetreader import GetAssetFromLink, GetMeshFromAsset
+from . mesh import GetMeshFromFile
 
 import xml.etree.ElementTree as ET
 import mathutils
@@ -12,7 +17,6 @@ import bpy
 import os
 import base64
 import hashlib
-import requests
 import imghdr
 import re
 import shutil
@@ -198,10 +202,8 @@ def GetOnlineTexture(Link, FaceIdx, part: Part, Type, TileUV: TileUV, RobloxInst
             os.remove(AssetsDir + "/" + assetID + ".jpeg")
         
         if not (os.path.exists(assetID + ".png") or os.path.exists(assetID + ".jpeg")):
-            asset = requests.get('https://assetdelivery.roblox.com/v1/assetId/' + assetID)
-            assetLink = asset.json()['location']
-
-            assetFile = requests.get(assetLink, allow_redirects=True)
+            assetFile = GetAssetFromLink('https://assetdelivery.roblox.com/v1/assetId/' + assetID)
+            
             open('tmp', 'wb').write(assetFile.content)
             assetType = imghdr.what('tmp')
             assetFileName = assetID + "." + str(assetType)
@@ -591,9 +593,11 @@ class StartConverting(bpy.types.Operator):
                                         continue
                 bm.to_mesh(brick.mesh)
         
-        test_texture = "/home/user/Desktop/rblx2blender/Rblx2Blender/meshes/MeshTesting_V4.png"
-        mesh = GetMeshFromFile("./meshes/MeshTesting_V4")
-        mesh.materials.append(CreateMaterialWithTexture(test_texture))
+        # test_texture = "/home/user/Desktop/rblx2blender/Rbx2Blender/meshes/MeshTesting_V4.png"
+        # mesh = GetMeshFromFile("./meshes/MeshTesting_V4")
+        # mesh.materials.append(CreateMaterialWithTexture(test_texture))
+
+        asset_mesh = GetMeshFromAsset("https://assetdelivery.roblox.com/v1/assetId/4771632715")
         
         timer += (timeit.default_timer() - start)
         print("done", timer)
