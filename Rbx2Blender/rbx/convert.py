@@ -8,7 +8,7 @@ from . legacycolors import BrickColor
 #import mesh as rbxmesh
 #import assetreader as assetreader
 from . assetreader import GetAssetFromLink, GetMeshFromAsset
-from . mesh import GetMeshFromFile
+from . mesh import GetBlenderMesh
 
 import mathutils
 import bmesh
@@ -597,8 +597,9 @@ class StartConverting(bpy.types.Operator):
         # mesh = GetMeshFromFile("./meshes/MeshTesting_V4")
         # mesh.materials.append(CreateMaterialWithTexture(test_texture))
 
-        #asset_mesh = GetMeshFromAsset("https://assetdelivery.roblox.com/v1/assetId/4771632715")
-        asset_mesh = GetMeshFromAsset("https://assetdelivery.roblox.com/v1/assetId/1091572")
+        asset_mesh = GetMeshFromAsset("https://assetdelivery.roblox.com/v1/assetId/4771632715")
+        mesh = GetBlenderMesh(asset_mesh.mesh)
+        #asset_mesh = GetMeshFromAsset("https://assetdelivery.roblox.com/v1/assetId/1091572")
         
         timer += (timeit.default_timer() - start)
         print("done", timer)
