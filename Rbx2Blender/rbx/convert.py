@@ -10,7 +10,6 @@ from . legacycolors import BrickColor
 from . assetreader import GetAssetFromLink, GetMeshFromAsset
 from . mesh import GetMeshFromFile
 
-import xml.etree.ElementTree as ET
 import mathutils
 import bmesh
 import bpy
@@ -20,6 +19,7 @@ import hashlib
 import imghdr
 import re
 import shutil
+import xml.etree.ElementTree as ET
 
 # debug
 import timeit
@@ -597,7 +597,8 @@ class StartConverting(bpy.types.Operator):
         # mesh = GetMeshFromFile("./meshes/MeshTesting_V4")
         # mesh.materials.append(CreateMaterialWithTexture(test_texture))
 
-        asset_mesh = GetMeshFromAsset("https://assetdelivery.roblox.com/v1/assetId/4771632715")
+        #asset_mesh = GetMeshFromAsset("https://assetdelivery.roblox.com/v1/assetId/4771632715")
+        asset_mesh = GetMeshFromAsset("https://assetdelivery.roblox.com/v1/assetId/1091572")
         
         timer += (timeit.default_timer() - start)
         print("done", timer)
