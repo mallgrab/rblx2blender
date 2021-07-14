@@ -19,11 +19,24 @@ def XMLAssetReader(file: str):
     mesh_url = root.findall(".//*[@class='SpecialMesh']/Properties/Content[@name='MeshId']/url")[0].text
     texture_url = root.findall(".//*[@class='SpecialMesh']/Properties/Content[@name='TextureId']/url")[0].text
 
+    # unsure how it would handle url's that are malformed.
     mesh_id = mesh_url[mesh_url.find('='):][1:]
     texture_id = texture_url[texture_url.find('='):][1:]
 
-    mesh = GetAssetFromLink('https://assetdelivery.roblox.com/v1/assetId/' + mesh_id)
-    texture = GetAssetFromLink('https://assetdelivery.roblox.com/v1/assetId/' + texture_id)
+    mesh = io.BytesIO(GetAssetFromLink('https://assetdelivery.roblox.com/v1/assetId/' + mesh_id))
+    texture = io.BytesIO(GetAssetFromLink('https://assetdelivery.roblox.com/v1/assetId/' + texture_id))
+
+    return MeshAsset(mesh, texture)
+
+def BinaryAssetReader(file: bytes):
+    _ = file[file.find(b"MeshId"):][24:]
+    mesh_id = _[:_.find(b"PROP")].decode("ascii")
+    
+    _ = file[file.find(b"TextureId"):][27:]
+    texture_id = _[:_.find(b"PROP")].decode("ascii")
+
+    mesh = io.BytesIO(GetAssetFromLink('https://assetdelivery.roblox.com/v1/assetId/' + mesh_id).content)
+    texture = io.BytesIO(GetAssetFromLink('https://assetdelivery.roblox.com/v1/assetId/' + texture_id).content)
 
     return MeshAsset(mesh, texture)
 
@@ -35,4 +48,5 @@ def GetMeshFromAsset(link: str):
         return mesh_asset
 
     if(asset.content.find(b'roblox!') > -1):
-        print("binary")
+        mesh_asset = BinaryAssetReader(asset.content)
+        return mesh_asset
