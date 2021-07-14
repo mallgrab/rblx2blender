@@ -16,7 +16,6 @@ def GetAssetFromLink(link: str):
 
 def XMLAssetReader(file: str):
     root = ET.parse(io.StringIO(file)).getroot()
-    # part = root.findall("./Item/Item/Item/Properties/Content[@name='MeshId']")
     mesh_url = root.findall(".//*[@class='SpecialMesh']/Properties/Content[@name='MeshId']/url")[0].text
     texture_url = root.findall(".//*[@class='SpecialMesh']/Properties/Content[@name='TextureId']/url")[0].text
 
