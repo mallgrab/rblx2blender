@@ -2,13 +2,15 @@ from copy import deepcopy
 from math import radians, degrees
 from typing import NamedTuple
 from collections import namedtuple
+from io import BytesIO
 
 from . legacycolors import BrickColor
+from . assetreader import MeshAsset
 
 #import mesh as rbxmesh
 #import assetreader as assetreader
 from . assetreader import GetAssetFromLink, GetMeshFromAsset
-from . mesh import GetBlenderMesh
+from . mesh import GetMeshFromMeshData
 
 import mathutils
 import bmesh
@@ -94,6 +96,21 @@ def CreateMaterial(r, g, b):
     mat = bpy.data.materials.new(name="BrClr" + str(r) + str(g) + str(b)) #set new material to variable
     mat.diffuse_color=(srgb2linear(r/255), srgb2linear(g/255), srgb2linear(b/255), 1.0)
     return mat
+
+def CreateMaterialFromBytes(data: MeshAsset, AssetsDir: str):
+    open("tmp", 'wb').write(data.texture)
+    assetType = imghdr.what('tmp')
+    textureName = "tex_" + str(data.texture_id) + "." + str(assetType)
+
+    if (os.path.exists(AssetsDir + "/" + textureName)):
+        os.remove(AssetsDir + "/" + textureName)
+
+    os.rename(r'tmp',r'' + textureName)
+    shutil.move(textureName, AssetsDir)
+
+    texture_path = os.path.abspath(AssetsDir + "/" + textureName)
+
+    return CreateMaterialWithTexture(texture_path)
 
 def CreateMaterialWithTexture(dir):
     for material in bpy.data.materials:
@@ -421,7 +438,7 @@ class StartConverting(bpy.types.Operator):
         RobloxInstallLocation = bpyscene.Install_Path.file_path
         PlaceName = os.path.splitext(os.path.basename(RobloxPlace))[0]
         
-        AssetsDir = PlaceName + "Assets"
+        asset_dir = PlaceName + "Assets"
         TextureList = []
         localTexId = 0
         
@@ -440,12 +457,12 @@ class StartConverting(bpy.types.Operator):
         for i in bpy.data.materials:
             bpy.data.materials.remove(i)
 
-        GetDataFromPlace(root, RobloxInstallLocation, PlaceName, AssetsDir)
+        GetDataFromPlace(root, RobloxInstallLocation, PlaceName, asset_dir)
 
         # If place has textures fill up TextureList.
-        if (os.path.exists(AssetsDir)):
-            for i in os.listdir(AssetsDir):
-                TextureList.append(os.path.abspath(AssetsDir + "/" + i))
+        if (os.path.exists(asset_dir)):
+            for i in os.listdir(asset_dir):
+                TextureList.append(os.path.abspath(asset_dir + "/" + i))
 
         # Convert md5 hash to the texture path
         part: Part
@@ -453,7 +470,7 @@ class StartConverting(bpy.types.Operator):
             textureMd5: TextureMd5
             for textureMd5 in part.md5Textures:
                 for TexturePath in TextureList:
-                    if(md5(TexturePath) == textureMd5.md5):
+                    if (md5(TexturePath) == textureMd5.md5):
                         # Change md5 hash to texture path
                         # Should probably just add texture path as a variable within TextureMd5
                         textureMd5.md5 = TexturePath
@@ -593,13 +610,10 @@ class StartConverting(bpy.types.Operator):
                                         continue
                 bm.to_mesh(brick.mesh)
         
-        # test_texture = "/home/user/Desktop/rblx2blender/Rbx2Blender/meshes/MeshTesting_V4.png"
-        # mesh = GetMeshFromFile("./meshes/MeshTesting_V4")
-        # mesh.materials.append(CreateMaterialWithTexture(test_texture))
-
-        asset_mesh = GetMeshFromAsset("https://assetdelivery.roblox.com/v1/assetId/4771632715")
-        mesh = GetBlenderMesh(asset_mesh.mesh)
-        #asset_mesh = GetMeshFromAsset("https://assetdelivery.roblox.com/v1/assetId/1091572")
+        asset_mesh = GetMeshFromAsset("https://assetdelivery.roblox.com/v1/assetId/1091572")
+        #asset_mesh = GetMeshFromAsset("https://assetdelivery.roblox.com/v1/assetId/4771632715")
+        mesh = GetMeshFromMeshData(asset_mesh)
+        mesh.materials.append(CreateMaterialFromBytes(asset_mesh, asset_dir))
         
         timer += (timeit.default_timer() - start)
         print("done", timer)

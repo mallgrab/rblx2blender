@@ -6,6 +6,8 @@ import ast
 import bmesh
 import bpy
 
+from . assetreader import MeshAsset
+
 path = "./meshes/MeshTesting_V3"
 
 class Vector3():
@@ -204,19 +206,19 @@ def MeshReader(file: BufferedReader):
     
     return MeshData(vertex_positions, vertex_faces, vertex_uvs, vertex_normals, vertex_lods, mesh_version)
 
-def ValidateMeshFile(file: BufferedReader):
+def IsValidMeshFile(file: BufferedReader):
     version_string = file.read(7)
     if (version_string.decode("utf-8") == 'version'):
         return True
 
 def OpenMeshFromFile(path: str):
     with open(path, "rb") as file:
-        if (ValidateMeshFile(path)):
+        if IsValidMeshFile(path):
             return MeshReader(file)
 
 def OpenMeshFromAsset(file: BytesIO):
-    if (ValidateMeshFile(file)):
-            return MeshReader(file)
+    if IsValidMeshFile(file):
+        return MeshReader(file)
 
 def GetMeshData(data):
     if (type(data) == BytesIO):
@@ -227,8 +229,8 @@ def GetMeshData(data):
         print("Faulty mesh data")
         return None
 
-def GetBlenderMesh(data):
-    mesh_data = GetMeshData(data)
+def GetMeshFromMeshData(data: MeshAsset):
+    mesh_data = GetMeshData(data.mesh)
     mesh_name = 'Mesh_' + str(mesh_data.version)
     mesh = bpy.data.meshes.new('mesh')
     
