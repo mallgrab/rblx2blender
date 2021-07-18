@@ -3,6 +3,7 @@ from math import radians, degrees
 from typing import NamedTuple
 from collections import namedtuple
 from io import BytesIO
+from xml.etree.ElementTree import Element
 
 from . legacycolors import BrickColor
 from . assetreader import MeshAsset
@@ -318,16 +319,40 @@ def CreatePart(part: Part):
 # Functions that require access to the list do it through the class object.
 
 # Also use https://docs.python.org/3/library/xml.etree.elementtree.html#example (XPath, findall, etc)
-def GetDataFromPlace(root, RobloxInstallLocation, PlaceName, AssetsDir):
+def GetDataFromPlace(root: Element, RobloxInstallLocation, PlaceName, AssetsDir):
     global PartsList
     global CylinderList
     global BrickList
     global SphereList
 
+    # Clearing lists since if the addon was run once there will be stuff in it.
     PartsList = []
     CylinderList = []
     BrickList = []
     SphereList = []
+
+    _workspace = root.findall(".//*[@class='Workspace']")[0]
+    _parts = _workspace.findall(".//*[@class='Part']")
+
+    _cframe_list = [0.0, 0.0, 0.0]
+    _cframe_size = [0.0, 0.0, 0.0]
+
+    for _part in _parts:
+        _props = _part.findall(".//Properties/")
+        
+        _props_cframe = _part.findall(".//Properties/CoordinateFrame/[@name='CFrame']/")
+        _cframe_list[0] = _props_cframe[0].text
+        _cframe_list[1] = _props_cframe[1].text
+        _cframe_list[2] = _props_cframe[2].text
+        
+        _props_size = _part.findall(".//Properties/Vector3/[@name='size']/")
+        _cframe_size[0] = _props_size[0].text
+        _cframe_size[1] = _props_size[1].text
+        _cframe_size[2] = _props_size[2].text
+
+        _props_color = _part.findall(".//Properties/int/[@name='BrickColor']")[0].text
+        _props_shape = _part.findall(".//Properties/token/[@name='shape']")[0].text
+        _v = _props
 
     for DataModel in root:
         if (DataModel.get('class') == 'Workspace'):
@@ -355,9 +380,12 @@ def GetDataFromPlace(root, RobloxInstallLocation, PlaceName, AssetsDir):
                                 if (Properties.attrib.get('name') == 'CFrame'):
                                     for Pos in Properties.iter():
 
-                                        if (Pos.tag == 'X'): CurrentPart.location[0] = float(Pos.text)
-                                        if (Pos.tag == 'Y'): CurrentPart.location[1] = float(Pos.text)
-                                        if (Pos.tag == 'Z'): CurrentPart.location[2] = float(Pos.text)
+                                        if (Pos.tag == 'X'): 
+                                            CurrentPart.location[0] = float(Pos.text)
+                                        if (Pos.tag == 'Y'): 
+                                            CurrentPart.location[1] = float(Pos.text)
+                                        if (Pos.tag == 'Z'): 
+                                            CurrentPart.location[2] = float(Pos.text)
 
                                         if (Pos.tag == 'R00'): 
                                             RotationMatrix[0][0] = float(Pos.text)
@@ -458,6 +486,9 @@ class StartConverting(bpy.types.Operator):
             bpy.data.materials.remove(i)
 
         GetDataFromPlace(root, RobloxInstallLocation, PlaceName, asset_dir)
+
+        if not os.path.exists(asset_dir):
+            os.mkdir(asset_dir)
 
         # If place has textures fill up TextureList.
         if (os.path.exists(asset_dir)):
