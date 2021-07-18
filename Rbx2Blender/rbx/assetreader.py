@@ -12,7 +12,12 @@ class MeshAsset(object):
 def GetAssetFromLink(link: str):
     asset = requests.get(link)
     assetLink = asset.json()['location']
-    assetFile = requests.get(assetLink, allow_redirects=True)
+    headers = {
+        'User-Agent': 'Roblox/WinInet',
+        'From': 'youremail@domain.com'  # This is another valid field
+    }
+
+    assetFile = requests.get(assetLink, allow_redirects=True, headers=headers)
 
     return assetFile
 
