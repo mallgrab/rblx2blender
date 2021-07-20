@@ -331,36 +331,108 @@ def GetDataFromPlace(root: Element, RobloxInstallLocation, PlaceName, AssetsDir)
     BrickList = []
     SphereList = []
 
-    _workspace = root.findall(".//*[@class='Workspace']")[0]
+    _workspace = root.find("./Item/[@class='Workspace']")
     _parts = _workspace.findall(".//*[@class='Part']")
+    _decals = _workspace.findall(".//*[@class='Decal']")
+    _textures = _workspace.findall(".//*[@class='Texture']")
+    #_parts = root.findall(".//Item/[@class='Workspace']/*[@class='Part']")
 
-    _cframe_list = [0.0, 0.0, 0.0]
-    _cframe_size = [0.0, 0.0, 0.0]
+    _location_list = [0.0, 0.0, 0.0]
+    _part_size = [0.0, 0.0, 0.0]
+    _rotation_matrix = mathutils.Matrix(([0,0,0],[0,0,0],[0,0,0]))
 
     for _part in _parts:
-        _props = _part.findall(".//Properties/")
-        
         _props_cframe = _part.findall(".//Properties/CoordinateFrame/[@name='CFrame']/")
-        _cframe_list[0] = _props_cframe[0].text
-        _cframe_list[1] = _props_cframe[1].text
-        _cframe_list[2] = _props_cframe[2].text
+        _location_list[0] = float(_props_cframe[0].text)
+        _location_list[1] = float(_props_cframe[1].text)
+        _location_list[2] = float(_props_cframe[2].text)
+        
+        _rotation_matrix[0][0] = float(_props_cframe[3].text)
+        _rotation_matrix[0][1] = float(_props_cframe[4].text)
+        _rotation_matrix[0][2] = float(_props_cframe[5].text)
+        _rotation_matrix[1][0] = float(_props_cframe[6].text)
+        _rotation_matrix[1][1] = float(_props_cframe[7].text)
+        _rotation_matrix[1][2] = float(_props_cframe[8].text)
+        _rotation_matrix[2][0] = float(_props_cframe[9].text)
+        _rotation_matrix[2][1] = float(_props_cframe[10].text)
+        _rotation_matrix[2][2] = float(_props_cframe[11].text)
         
         _props_size = _part.findall(".//Properties/Vector3/[@name='size']/")
-        _cframe_size[0] = _props_size[0].text
-        _cframe_size[1] = _props_size[1].text
-        _cframe_size[2] = _props_size[2].text
+        _part_size[0] = float(_props_size[0].text)
+        _part_size[1] = float(_props_size[1].text)
+        _part_size[2] = float(_props_size[2].text)
 
-        _props_color = _part.findall(".//Properties/int/[@name='BrickColor']")[0].text
+        if rbxlx:
+            _props_color = _part.findall(".//Properties/Color3uint8/[@name='Color3uint8']")[0].text
+        else:
+            _props_color = _part.findall(".//Properties/int/[@name='BrickColor']")[0].text
+        
         _props_shape = _part.findall(".//Properties/token/[@name='shape']")[0].text
-        _v = _props
+        
+        _current_part = Part()
+        _current_part.location[0] = _location_list[0]
+        _current_part.location[1] = _location_list[1]
+        _current_part.location[2] = _location_list[2]
 
+        _current_part.scale[0] = _part_size[0]
+        _current_part.scale[1] = _part_size[1]
+        _current_part.scale[2] = _part_size[2]
+
+        _current_part.brickColor = int(_props_color)
+        _current_part.brickType = int(_props_shape)
+
+        CalculateRotation(_current_part, _rotation_matrix.to_euler("XYZ"))
+        PartsList.append(_current_part)
+        
+        _part_decals = _part.findall(".//Properties/../Item/[@class='Decal']")
+        _part_textures = _part.findall(".//Properties/../Item/[@class='Texture']")
+
+        for _part_decal in _part_decals:
+            for _property in _part_decal.findall("./Properties/"):
+                if _property.tag == 'token':
+                    face_index = GetFaceIndex(int(_property.text))
+                if _property.tag == 'Content':
+                    _content = _property.findall("./")[0]
+                    if _content.tag == 'hash' or _content.tag == 'url':
+                        GetOnlineTexture(_content.text, face_index, _current_part, 'Decal', TileUV(None, None), RobloxInstallLocation, PlaceName, AssetsDir)
+                    if _content.tag == 'binary':
+                        GetLocalTexture(_content, face_index, _current_part, 'Decal', AssetsDir)
+        
+        for _part_texture in _part_textures:
+            TileU = 2
+            TileV = 2
+            # not used
+            OffsetU = 0
+            OffsetV = 0
+
+            for _property in _part_texture.findall("./Properties/"):
+                if _property.tag == 'float':
+                    if _property.attrib.get('name') == 'StudsPerTileU':
+                        TileU = float(_property.text)
+                    if _property.attrib.get('name') == 'StudsPerTileV':
+                        TileV = float(_property.text)
+                    if _property.attrib.get('name') == 'OffsetStudsU':
+                        OffsetU = float(_property.text)
+                    if _property.attrib.get('name') == 'OffsetStudsV':
+                        OffsetV = float(_property.text)
+                if _property.tag == 'token':
+                    if _property.attrib.get('name') == 'Face':
+                        face_index = GetFaceIndex(int(_property.text))
+                if _property.tag == 'Content':
+                    _content = _property.findall("./")[0]
+                    if _content.tag == 'url':
+                        GetOnlineTexture(_content.text, face_index, _current_part, 'Texture', TileUV(TileU, TileV), RobloxInstallLocation, PlaceName, AssetsDir)
+                    if _content.tag == 'hash':
+                        TextureDuplicated(_content.text, face_index, _current_part)
+                    if _content.tag == 'binary':
+                        GetLocalTexture(_content, face_index, _current_part, 'Texture', AssetsDir)
+    """
     for DataModel in root:
         if (DataModel.get('class') == 'Workspace'):
             for Workspace in DataModel.iter('Item'):
                 if (Workspace.get('class') == 'Part'):
                     CurrentPart = Part()
                     PartsList.append(CurrentPart)
-
                     for Parts in Workspace.iter('Properties'):
                         for Properties in Parts.iter():
                             if (rbxlx):
@@ -416,7 +488,6 @@ def GetDataFromPlace(root: Element, RobloxInstallLocation, PlaceName, AssetsDir)
                                         if (Pos.tag == 'Z'): 
                                             CurrentPart.scale[2] = float(Pos.text)
                                             CalculateRotation(CurrentPart, RotationMatrix.to_euler("XYZ"))
-         
                     for Items in Workspace.iter('Item'):
                         if (Items.get('class') == 'Decal'):
                             if (Workspace.attrib.get('class') == 'Part'):
@@ -451,6 +522,7 @@ def GetDataFromPlace(root: Element, RobloxInstallLocation, PlaceName, AssetsDir)
 
                                     if (Texture.tag == 'binary'):
                                         GetLocalTexture(Texture, FaceIdx, CurrentPart, 'Texture', AssetsDir)
+    """
 
 class StartConverting(bpy.types.Operator):
     bl_idname = "scene.button_operator_convert"
@@ -485,7 +557,11 @@ class StartConverting(bpy.types.Operator):
         for i in bpy.data.materials:
             bpy.data.materials.remove(i)
 
+        timer_data = 0.0
+        timer_data_start = timeit.default_timer()
         GetDataFromPlace(root, RobloxInstallLocation, PlaceName, asset_dir)
+        timer_data += (timeit.default_timer() - timer_data_start)
+        print("data done:", timer_data)
 
         if not os.path.exists(asset_dir):
             os.mkdir(asset_dir)
