@@ -4,6 +4,7 @@ from typing import NamedTuple
 from collections import namedtuple
 from io import BytesIO
 from xml.etree.ElementTree import Element
+from typing import List
 
 from . legacycolors import BrickColor
 from . assetreader import MeshAsset
@@ -22,7 +23,7 @@ import hashlib
 import imghdr
 import re
 import shutil
-import xml.etree.ElementTree as ET
+import lxml.etree as ET
 
 # debug
 import timeit
@@ -31,12 +32,26 @@ class Part(object):
     def __init__(self):
         self.location = [0.0, 0.0, 0.0]
         self.rotation = [0.0, 0.0, 0.0]
+        self.rotation_matrix = [0,0,0,0,0,0,0,0,0]
         self.scale = [0.0, 0.0, 0.0]
         self.brickColor = 0
         self.brickType = 0
         self.textures = []
         self.md5Textures = []
         self.decals = []
+    
+    def set_rotation_from_matrix(self):
+        matrix = mathutils.Matrix(([0,0,0],[0,0,0],[0,0,0]))
+        matrix[0][0] = self.rotation_matrix[0]
+        matrix[0][1] = self.rotation_matrix[1]
+        matrix[0][2] = self.rotation_matrix[2]
+        matrix[1][0] = self.rotation_matrix[3]
+        matrix[1][1] = self.rotation_matrix[4]
+        matrix[1][2] = self.rotation_matrix[5]
+        matrix[2][0] = self.rotation_matrix[6]
+        matrix[2][1] = self.rotation_matrix[7]
+        matrix[2][2] = self.rotation_matrix[8]
+        GetRotationFromMatrix(self, matrix.to_euler("XYZ"))
 
 class TileUV(object):
     def __init__(self, U, V):
@@ -70,7 +85,7 @@ RotationMatrix = mathutils.Matrix(([0,0,0],[0,0,0],[0,0,0]))
 localTexId = 0
 rbxlx = False
 
-def CalculateRotation(part: Part, EulerVector3):
+def GetRotationFromMatrix(part: Part, EulerVector3):
     part.rotation[0] = EulerVector3[0]
     part.rotation[1] = EulerVector3[1]
     part.rotation[2] = EulerVector3[2]
@@ -319,7 +334,7 @@ def CreatePart(part: Part):
 # Functions that require access to the list do it through the class object.
 
 # Also use https://docs.python.org/3/library/xml.etree.elementtree.html#example (XPath, findall, etc)
-def GetDataFromPlace(root: Element, RobloxInstallLocation, PlaceName, AssetsDir):
+def GetDataFromPlace(root: Element, RobloxInstallLocation, PlaceName, AssetsDir, RobloxPlace):
     global PartsList
     global CylinderList
     global BrickList
@@ -331,6 +346,106 @@ def GetDataFromPlace(root: Element, RobloxInstallLocation, PlaceName, AssetsDir)
     BrickList = []
     SphereList = []
 
+    context = ET.iterparse(RobloxPlace, events=("start", "end"))
+    event: Element
+    element: Element
+    parent_element = []
+    parent_element: List[Element]
+    part_list = []
+    part_list: List[Part]
+
+    location_list = [0.0, 0.0, 0.0]
+    part_size = [0.0, 0.0, 0.0]
+    rotation_list = [0,0,0,0,0,0,0,0,0]
+    current_part = None
+
+    vector3_index = {
+        'X':0,
+        'Y':1,
+        'Z':2
+    }
+
+    rotation_index = {
+        'R00':0,
+        'R01':1,
+        'R02':2,
+        'R10':3,
+        'R11':4,
+        'R12':5,
+        'R20':6,
+        'R21':7,
+        'R22':8,
+    }
+
+    # do not include items outside of workspace
+    # could do continue once worldspace is at end
+    for event, element in context:
+        # event: start, end
+        if element.tag == 'Item':
+            class_attrib = element.attrib.get('class')
+            if class_attrib == 'Part':
+                if event == 'start':
+                    parent_element.append(element)
+                    current_part = Part()
+                    part_list.append(current_part)
+                elif event == 'end':
+                    PartsList.append(part_list[-1])
+                    parent_element.pop()
+                    part_list.pop()
+                    current_part = None
+
+            if class_attrib == 'Decal' or class_attrib == 'Texture':
+                if event == 'start':
+                    parent_element.append(element)
+                elif event == 'end':
+                    parent_element.pop()
+            
+        if parent_element:
+            if parent_element[0].attrib.get('class') == 'Part':
+                if event == 'end':
+                    if rbxlx:
+                        if element.get('name') == 'Color3uint8':
+                            part_list[-1].brickColor = int(element.text)
+
+                    if element.get('name') == 'BrickColor':
+                        part_list[-1].brickColor = int(element.text)
+
+                    if element.get('name') == 'shape':
+                        part_list[-1].brickType = int(element.text)
+                
+                if element.tag == 'CoordinateFrame':
+                    if event == 'start':
+                        parent_element.append(element)
+                    elif event == 'end':
+                        parent_element.pop()
+                if element.attrib.get('name') == 'size':
+                    if event == 'start':
+                        parent_element.append(element)
+                    elif event == 'end':
+                        parent_element.pop()
+
+                if len(parent_element) > 1 and event == 'end':
+                    if parent_element[-1].attrib.get('name') == 'CFrame':
+                        if vector3_index.get(element.tag) == None:
+                            pass
+                        else:
+                            part_list[-1].location[vector3_index.get(element.tag)] = float(element.text)
+                        
+                        if rotation_index.get(element.tag) == None:
+                            pass
+                        else:
+                            part_list[-1].rotation_matrix[rotation_index.get(element.tag)] = float(element.text)
+                            if element.tag == 'R22':
+                                part_list[-1].set_rotation_from_matrix()
+                    
+                    if parent_element[-1].attrib.get('name') == 'size':
+                        if vector3_index.get(element.tag) == None:
+                            pass
+                        else:
+                            part_list[-1].scale[vector3_index.get(element.tag)] = float(element.text)
+        _v = event
+
+    """
     _workspace = root.find("./Item/[@class='Workspace']")
     _parts = _workspace.findall(".//*[@class='Part']")
     _decals = _workspace.findall(".//*[@class='Decal']")
@@ -381,7 +496,7 @@ def GetDataFromPlace(root: Element, RobloxInstallLocation, PlaceName, AssetsDir)
         _current_part.brickColor = int(_props_color)
         _current_part.brickType = int(_props_shape)
 
-        CalculateRotation(_current_part, _rotation_matrix.to_euler("XYZ"))
+        GetRotationFromMatrix(_current_part, _rotation_matrix.to_euler("XYZ"))
         PartsList.append(_current_part)
         
         _part_decals = _part.findall(".//Properties/../Item/[@class='Decal']")
@@ -427,102 +542,6 @@ def GetDataFromPlace(root: Element, RobloxInstallLocation, PlaceName, AssetsDir)
                     if _content.tag == 'binary':
                         GetLocalTexture(_content, face_index, _current_part, 'Texture', AssetsDir)
     """
-    for DataModel in root:
-        if (DataModel.get('class') == 'Workspace'):
-            for Workspace in DataModel.iter('Item'):
-                if (Workspace.get('class') == 'Part'):
-                    CurrentPart = Part()
-                    PartsList.append(CurrentPart)
-                    for Parts in Workspace.iter('Properties'):
-                        for Properties in Parts.iter():
-                            if (rbxlx):
-                                if (Properties.tag == 'Color3uint8'):
-                                    if (Properties.attrib.get('name') == 'Color3uint8'):
-                                        CurrentPart.brickColor = int(Properties.text)
-                            else:
-                                if (Properties.tag == 'int'):
-                                    if (Properties.attrib.get('name') == 'BrickColor'):
-                                        CurrentPart.brickColor = int(Properties.text)
-
-                            if (Properties.tag == 'token'):
-                                if (Properties.attrib.get('name') == 'shape'):
-                                    CurrentPart.brickType = int(Properties.text)
-
-                            if (Properties.tag == 'CoordinateFrame'):
-                                if (Properties.attrib.get('name') == 'CFrame'):
-                                    for Pos in Properties.iter():
-
-                                        if (Pos.tag == 'X'): 
-                                            CurrentPart.location[0] = float(Pos.text)
-                                        if (Pos.tag == 'Y'): 
-                                            CurrentPart.location[1] = float(Pos.text)
-                                        if (Pos.tag == 'Z'): 
-                                            CurrentPart.location[2] = float(Pos.text)
-
-                                        if (Pos.tag == 'R00'): 
-                                            RotationMatrix[0][0] = float(Pos.text)
-                                        if (Pos.tag == 'R01'): 
-                                            RotationMatrix[0][1] = float(Pos.text)
-                                        if (Pos.tag == 'R02'): 
-                                            RotationMatrix[0][2] = float(Pos.text)
-                                        if (Pos.tag == 'R10'): 
-                                            RotationMatrix[1][0] = float(Pos.text)
-                                        if (Pos.tag == 'R11'): 
-                                            RotationMatrix[1][1] = float(Pos.text)
-                                        if (Pos.tag == 'R12'): 
-                                            RotationMatrix[1][2] = float(Pos.text)
-                                        if (Pos.tag == 'R20'): 
-                                            RotationMatrix[2][0] = float(Pos.text)
-                                        if (Pos.tag == 'R21'): 
-                                            RotationMatrix[2][1] = float(Pos.text)
-                                        if (Pos.tag == 'R22'): 
-                                            RotationMatrix[2][2] = float(Pos.text)
-
-                            if (Properties.tag == 'Vector3'):
-                                if (Properties.attrib.get('name') == 'size'):
-                                    for Pos in Properties.iter():
-                                        if (Pos.tag == 'X'): 
-                                            CurrentPart.scale[0] = float(Pos.text)
-                                        if (Pos.tag == 'Y'): 
-                                            CurrentPart.scale[1] = float(Pos.text)
-                                        if (Pos.tag == 'Z'): 
-                                            CurrentPart.scale[2] = float(Pos.text)
-                                            CalculateRotation(CurrentPart, RotationMatrix.to_euler("XYZ"))
-                    for Items in Workspace.iter('Item'):
-                        if (Items.get('class') == 'Decal'):
-                            if (Workspace.attrib.get('class') == 'Part'):
-                                for Decal in Items.iter():   
-                                    if (Decal.tag == 'token'):
-                                        if (Decal.attrib.get('name') == 'Face'):
-                                            FaceIdx = GetFaceIndex(int(Decal.text))  
-                                    if (Decal.tag == 'hash' or Decal.tag == 'url'):
-                                        GetOnlineTexture(Decal.text, FaceIdx, CurrentPart, 'Decal', TileUV(None, None), RobloxInstallLocation, PlaceName, AssetsDir)            
-                                    if (Decal.tag == 'binary'):
-                                        GetLocalTexture(Decal, FaceIdx, CurrentPart, 'Decal', AssetsDir)
-
-                        if (Items.get('class') == 'Texture'):
-                            if (Workspace.attrib.get('class') == 'Part'):
-                                TileU = 2
-                                TileV = 2
-                                for Texture in Items.iter():
-                                    if (Texture.tag == 'float'):
-                                        if (Texture.attrib.get('name') == 'StudsPerTileU'):
-                                            TileU = float(Texture.text)
-                                        if (Texture.attrib.get('name') == 'StudsPerTileV'):
-                                            TileV = float(Texture.text)
-
-                                    if (Texture.tag == 'token'):
-                                        if (Texture.attrib.get('name') == 'Face'):
-                                            FaceIdx = GetFaceIndex(int(Texture.text))
-                                    if (Texture.tag == 'url'):
-                                        GetOnlineTexture(Texture.text, FaceIdx, CurrentPart, 'Texture', TileUV(TileU, TileV), RobloxInstallLocation, PlaceName, AssetsDir)
-                                    
-                                    if (Texture.tag == 'hash'):
-                                        TextureDuplicated(Texture.text, FaceIdx, CurrentPart)                                  
-
-                                    if (Texture.tag == 'binary'):
-                                        GetLocalTexture(Texture, FaceIdx, CurrentPart, 'Texture', AssetsDir)
-    """
 
 class StartConverting(bpy.types.Operator):
     bl_idname = "scene.button_operator_convert"
@@ -559,7 +578,7 @@ class StartConverting(bpy.types.Operator):
 
         timer_data = 0.0
         timer_data_start = timeit.default_timer()
-        GetDataFromPlace(root, RobloxInstallLocation, PlaceName, asset_dir)
+        GetDataFromPlace(root, RobloxInstallLocation, PlaceName, asset_dir, RobloxPlace)
         timer_data += (timeit.default_timer() - timer_data_start)
         print("data done:", timer_data)
 
@@ -573,6 +592,8 @@ class StartConverting(bpy.types.Operator):
 
         # Convert md5 hash to the texture path
         part: Part
+        
+        """
         for part in PartsList:
             textureMd5: TextureMd5
             for textureMd5 in part.md5Textures:
@@ -582,6 +603,7 @@ class StartConverting(bpy.types.Operator):
                         # Should probably just add texture path as a variable within TextureMd5
                         textureMd5.md5 = TexturePath
                         part.textures.append(textureMd5)
+        """
 
         for part in PartsList:
             CreatePart(part)
