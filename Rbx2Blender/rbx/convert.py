@@ -23,7 +23,7 @@ import hashlib
 import imghdr
 import re
 import shutil
-import lxml.etree as ET
+import xml.etree.ElementTree as ET
 
 # debug
 import timeit
@@ -375,8 +375,6 @@ def GetDataFromPlace(root: Element, RobloxInstallLocation, PlaceName, AssetsDir,
         'R22':8,
     }
 
-    # do not include items outside of workspace
-    # could do continue once worldspace is at end
     for event, element in context:
         # event: start, end
         if element.tag == 'Item':
@@ -595,7 +593,6 @@ class StartConverting(bpy.types.Operator):
         # Convert md5 hash to the texture path
         part: Part
         
-        """
         for part in PartsList:
             textureMd5: TextureMd5
             for textureMd5 in part.md5Textures:
@@ -605,7 +602,6 @@ class StartConverting(bpy.types.Operator):
                         # Should probably just add texture path as a variable within TextureMd5
                         textureMd5.md5 = TexturePath
                         part.textures.append(textureMd5)
-        """
 
         for part in PartsList:
             CreatePart(part)
