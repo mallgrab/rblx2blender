@@ -349,14 +349,12 @@ def GetDataFromPlace(root: Element, RobloxInstallLocation, PlaceName, AssetsDir,
     context = ET.iterparse(RobloxPlace, events=("start", "end"))
     event: Element
     element: Element
-    parent_element = []
-    parent_element: List[Element]
-    part_list = []
-    part_list: List[Part]
+    parent_element: List[Element] = []
+    nested_parts: List[Part] = []
 
-    location_list = [0.0, 0.0, 0.0]
-    part_size = [0.0, 0.0, 0.0]
-    rotation_list = [0,0,0,0,0,0,0,0,0]
+    # location_list = [0.0, 0.0, 0.0]
+    # part_size = [0.0, 0.0, 0.0]
+    # rotation_list = [0,0,0,0,0,0,0,0,0]
     current_part = None
 
     vector3_index = {
@@ -383,15 +381,19 @@ def GetDataFromPlace(root: Element, RobloxInstallLocation, PlaceName, AssetsDir,
         # event: start, end
         if element.tag == 'Item':
             class_attrib = element.attrib.get('class')
+            if class_attrib == 'Workspace':
+                if event == 'end':
+                    break
+
             if class_attrib == 'Part':
                 if event == 'start':
                     parent_element.append(element)
                     current_part = Part()
-                    part_list.append(current_part)
+                    nested_parts.append(current_part)
                 elif event == 'end':
-                    PartsList.append(part_list[-1])
+                    PartsList.append(nested_parts[-1])
                     parent_element.pop()
-                    part_list.pop()
+                    nested_parts.pop()
                     current_part = None
 
             if class_attrib == 'Decal' or class_attrib == 'Texture':
@@ -405,13 +407,13 @@ def GetDataFromPlace(root: Element, RobloxInstallLocation, PlaceName, AssetsDir,
                 if event == 'end':
                     if rbxlx:
                         if element.get('name') == 'Color3uint8':
-                            part_list[-1].brickColor = int(element.text)
+                            nested_parts[-1].brickColor = int(element.text)
 
                     if element.get('name') == 'BrickColor':
-                        part_list[-1].brickColor = int(element.text)
+                        nested_parts[-1].brickColor = int(element.text)
 
                     if element.get('name') == 'shape':
-                        part_list[-1].brickType = int(element.text)
+                        nested_parts[-1].brickType = int(element.text)
                 
                 if element.tag == 'CoordinateFrame':
                     if event == 'start':
@@ -429,20 +431,20 @@ def GetDataFromPlace(root: Element, RobloxInstallLocation, PlaceName, AssetsDir,
                         if vector3_index.get(element.tag) == None:
                             pass
                         else:
-                            part_list[-1].location[vector3_index.get(element.tag)] = float(element.text)
+                            nested_parts[-1].location[vector3_index.get(element.tag)] = float(element.text)
                         
                         if rotation_index.get(element.tag) == None:
                             pass
                         else:
-                            part_list[-1].rotation_matrix[rotation_index.get(element.tag)] = float(element.text)
+                            nested_parts[-1].rotation_matrix[rotation_index.get(element.tag)] = float(element.text)
                             if element.tag == 'R22':
-                                part_list[-1].set_rotation_from_matrix()
+                                nested_parts[-1].set_rotation_from_matrix()
                     
                     if parent_element[-1].attrib.get('name') == 'size':
                         if vector3_index.get(element.tag) == None:
                             pass
                         else:
-                            part_list[-1].scale[vector3_index.get(element.tag)] = float(element.text)
+                            nested_parts[-1].scale[vector3_index.get(element.tag)] = float(element.text)
         _v = event
 
     """
