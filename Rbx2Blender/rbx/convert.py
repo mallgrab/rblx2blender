@@ -375,6 +375,12 @@ def GetDataFromPlace(root: Element, RobloxInstallLocation, PlaceName, AssetsDir,
         'R22':8,
     }
 
+    TileU = 2
+    TileV = 2
+    OffsetU = 0 # not used
+    OffsetV = 0 # not used
+    face_index = 0
+    
     for event, element in context:
         # event: start, end
         if element.tag == 'Item':
@@ -399,9 +405,20 @@ def GetDataFromPlace(root: Element, RobloxInstallLocation, PlaceName, AssetsDir,
                     parent_element.append(element)
                 elif event == 'end':
                     parent_element.pop()
-            
+
         if parent_element:
             if parent_element[0].attrib.get('class') == 'Part':
+                if element.tag == 'CoordinateFrame':
+                    if event == 'start':
+                        parent_element.append(element)
+                    elif event == 'end':
+                        parent_element.pop()
+                if element.attrib.get('name') == 'size':
+                    if event == 'start':
+                        parent_element.append(element)
+                    elif event == 'end':
+                        parent_element.pop()
+                
                 if event == 'end':
                     if rbxlx:
                         if element.get('name') == 'Color3uint8':
@@ -413,135 +430,69 @@ def GetDataFromPlace(root: Element, RobloxInstallLocation, PlaceName, AssetsDir,
                     if element.get('name') == 'shape':
                         nested_parts[-1].brickType = int(element.text)
                 
-                if element.tag == 'CoordinateFrame':
-                    if event == 'start':
-                        parent_element.append(element)
-                    elif event == 'end':
-                        parent_element.pop()
-                if element.attrib.get('name') == 'size':
-                    if event == 'start':
-                        parent_element.append(element)
-                    elif event == 'end':
-                        parent_element.pop()
+                    if len(parent_element) > 1:
+                        if parent_element[-1].attrib.get('name') == 'CFrame':
+                            if vector3_index.get(element.tag) == None:
+                                pass
+                            else:
+                                nested_parts[-1].location[vector3_index.get(element.tag)] = float(element.text)
 
-                if len(parent_element) > 1 and event == 'end':
-                    if parent_element[-1].attrib.get('name') == 'CFrame':
-                        if vector3_index.get(element.tag) == None:
-                            pass
-                        else:
-                            nested_parts[-1].location[vector3_index.get(element.tag)] = float(element.text)
-                        
-                        if rotation_index.get(element.tag) == None:
-                            pass
-                        else:
-                            nested_parts[-1].rotation_matrix[rotation_index.get(element.tag)] = float(element.text)
-                            if element.tag == 'R22':
-                                nested_parts[-1].set_rotation_from_matrix()
+                            if rotation_index.get(element.tag) == None:
+                                pass
+                            else:
+                                nested_parts[-1].rotation_matrix[rotation_index.get(element.tag)] = float(element.text)
+                                if element.tag == 'R22':
+                                    nested_parts[-1].set_rotation_from_matrix()
+
+                        if parent_element[-1].attrib.get('name') == 'size':
+                            if vector3_index.get(element.tag) == None:
+                                pass
+                            else:
+                                nested_parts[-1].scale[vector3_index.get(element.tag)] = float(element.text)
+
+            if len(parent_element) > 1:
+                if parent_element[1].attrib.get('class') == 'Decal':
+                    if element.tag == 'Content':
+                        if event == 'start':
+                            parent_element.append(element)
+                        elif event == 'end':
+                            parent_element.pop()
                     
-                    if parent_element[-1].attrib.get('name') == 'size':
-                        if vector3_index.get(element.tag) == None:
-                            pass
-                        else:
-                            nested_parts[-1].scale[vector3_index.get(element.tag)] = float(element.text)
-        _v = event
+                    if event == 'end':
+                        if element.get('name') == 'Face':
+                            face_index = GetFaceIndex(int(element.text))
+                        if element.tag == 'hash' or element.tag == 'url':
+                            GetOnlineTexture(element.text, face_index, nested_parts[0], 'Decal', TileUV(None, None), RobloxInstallLocation, PlaceName, AssetsDir)
+                        if element.tag == 'binary':
+                            GetLocalTexture(element, face_index, nested_parts[0], 'Decal', AssetsDir)
 
-    """
-    _workspace = root.find("./Item/[@class='Workspace']")
-    _parts = _workspace.findall(".//*[@class='Part']")
-    _decals = _workspace.findall(".//*[@class='Decal']")
-    _textures = _workspace.findall(".//*[@class='Texture']")
-    #_parts = root.findall(".//Item/[@class='Workspace']/*[@class='Part']")
+                if parent_element[1].attrib.get('class') == 'Texture':
+                    if element.tag == 'Content':
+                        if event == 'start':
+                            parent_element.append(element)
+                        elif event == 'end':
+                            parent_element.pop()
 
-    _location_list = [0.0, 0.0, 0.0]
-    _part_size = [0.0, 0.0, 0.0]
-    _rotation_matrix = mathutils.Matrix(([0,0,0],[0,0,0],[0,0,0]))
+                    if event == 'end':
+                        if element.get('name') == 'StudsPerTileU':
+                            TileU = float(element.text)
+                        if element.get('name') == 'StudsPerTileV':
+                            TileV = float(element.text)
 
-    for _part in _parts:
-        _props_cframe = _part.findall(".//Properties/CoordinateFrame/[@name='CFrame']/")
-        _location_list[0] = float(_props_cframe[0].text)
-        _location_list[1] = float(_props_cframe[1].text)
-        _location_list[2] = float(_props_cframe[2].text)
-        
-        _rotation_matrix[0][0] = float(_props_cframe[3].text)
-        _rotation_matrix[0][1] = float(_props_cframe[4].text)
-        _rotation_matrix[0][2] = float(_props_cframe[5].text)
-        _rotation_matrix[1][0] = float(_props_cframe[6].text)
-        _rotation_matrix[1][1] = float(_props_cframe[7].text)
-        _rotation_matrix[1][2] = float(_props_cframe[8].text)
-        _rotation_matrix[2][0] = float(_props_cframe[9].text)
-        _rotation_matrix[2][1] = float(_props_cframe[10].text)
-        _rotation_matrix[2][2] = float(_props_cframe[11].text)
-        
-        _props_size = _part.findall(".//Properties/Vector3/[@name='size']/")
-        _part_size[0] = float(_props_size[0].text)
-        _part_size[1] = float(_props_size[1].text)
-        _part_size[2] = float(_props_size[2].text)
+                        if element.get('name') == 'OffsetStudsU':
+                            OffsetU = float(element.text)
+                        if element.get('name') == 'OffsetStudsV':
+                            OffsetV = float(element.text)
 
-        if rbxlx:
-            _props_color = _part.findall(".//Properties/Color3uint8/[@name='Color3uint8']")[0].text
-        else:
-            _props_color = _part.findall(".//Properties/int/[@name='BrickColor']")[0].text
-        
-        _props_shape = _part.findall(".//Properties/token/[@name='shape']")[0].text
-        
-        _current_part = Part()
-        _current_part.location[0] = _location_list[0]
-        _current_part.location[1] = _location_list[1]
-        _current_part.location[2] = _location_list[2]
-
-        _current_part.scale[0] = _part_size[0]
-        _current_part.scale[1] = _part_size[1]
-        _current_part.scale[2] = _part_size[2]
-
-        _current_part.brickColor = int(_props_color)
-        _current_part.brickType = int(_props_shape)
-
-        GetRotationFromMatrix(_current_part, _rotation_matrix.to_euler("XYZ"))
-        PartsList.append(_current_part)
-        
-        _part_decals = _part.findall(".//Properties/../Item/[@class='Decal']")
-        _part_textures = _part.findall(".//Properties/../Item/[@class='Texture']")
-
-        for _part_decal in _part_decals:
-            for _property in _part_decal.findall("./Properties/"):
-                if _property.tag == 'token':
-                    face_index = GetFaceIndex(int(_property.text))
-                if _property.tag == 'Content':
-                    _content = _property.findall("./")[0]
-                    if _content.tag == 'hash' or _content.tag == 'url':
-                        GetOnlineTexture(_content.text, face_index, _current_part, 'Decal', TileUV(None, None), RobloxInstallLocation, PlaceName, AssetsDir)
-                    if _content.tag == 'binary':
-                        GetLocalTexture(_content, face_index, _current_part, 'Decal', AssetsDir)
-        
-        for _part_texture in _part_textures:
-            TileU = 2
-            TileV = 2
-            # not used
-            OffsetU = 0
-            OffsetV = 0
-
-            for _property in _part_texture.findall("./Properties/"):
-                if _property.tag == 'float':
-                    if _property.attrib.get('name') == 'StudsPerTileU':
-                        TileU = float(_property.text)
-                    if _property.attrib.get('name') == 'StudsPerTileV':
-                        TileV = float(_property.text)
-                    if _property.attrib.get('name') == 'OffsetStudsU':
-                        OffsetU = float(_property.text)
-                    if _property.attrib.get('name') == 'OffsetStudsV':
-                        OffsetV = float(_property.text)
-                if _property.tag == 'token':
-                    if _property.attrib.get('name') == 'Face':
-                        face_index = GetFaceIndex(int(_property.text))
-                if _property.tag == 'Content':
-                    _content = _property.findall("./")[0]
-                    if _content.tag == 'url':
-                        GetOnlineTexture(_content.text, face_index, _current_part, 'Texture', TileUV(TileU, TileV), RobloxInstallLocation, PlaceName, AssetsDir)
-                    if _content.tag == 'hash':
-                        TextureDuplicated(_content.text, face_index, _current_part)
-                    if _content.tag == 'binary':
-                        GetLocalTexture(_content, face_index, _current_part, 'Texture', AssetsDir)
-    """
+                        if element.get('name') == 'Face':
+                            face_index = GetFaceIndex(int(element.text))
+                        
+                        if element.tag == 'url':
+                            GetOnlineTexture(element.text, face_index, nested_parts[0], 'Texture', TileUV(TileU, TileV), RobloxInstallLocation, PlaceName, AssetsDir)
+                        elif element.tag == 'hash':
+                            TextureDuplicated(element.text, face_index, nested_parts[0])
+                        elif element.tag == 'binary':
+                            GetLocalTexture(element, face_index, nested_parts[0], 'Texture', AssetsDir)
 
 class StartConverting(bpy.types.Operator):
     bl_idname = "scene.button_operator_convert"
