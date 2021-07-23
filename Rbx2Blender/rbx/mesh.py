@@ -230,7 +230,7 @@ def GetMeshData(data):
         return None
 
 def GetMeshFromMeshData(data: MeshAsset):
-    mesh_data = GetMeshData(data.mesh)
+    mesh_data = GetMeshData(data.content.mesh)
     mesh_name = 'Mesh_' + str(mesh_data.version)
     mesh = bpy.data.meshes.new('mesh')
     

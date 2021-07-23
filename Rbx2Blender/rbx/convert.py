@@ -58,9 +58,9 @@ def CreateMaterial(r, g, b):
     return mat
 
 def CreateMaterialFromBytes(data: MeshAsset, AssetsDir: str):
-    open("tmp", 'wb').write(data.texture)
+    open("tmp", 'wb').write(data.content.texture)
     assetType = imghdr.what('tmp')
-    textureName = "tex_" + str(data.texture_id) + "." + str(assetType)
+    textureName = "tex_" + str(data.ids.texture) + "." + str(assetType)
 
     if (os.path.exists(AssetsDir + "/" + textureName)):
         os.remove(AssetsDir + "/" + textureName)
