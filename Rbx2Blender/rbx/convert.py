@@ -34,11 +34,6 @@ SphereList = []
 RotationMatrix = mathutils.Matrix(([0,0,0],[0,0,0],[0,0,0]))
 rbxlx = False
 
-def GetRotationFromMatrix(part: Part, EulerVector3):
-    part.rotation[0] = EulerVector3[0]
-    part.rotation[1] = EulerVector3[1]
-    part.rotation[2] = EulerVector3[2]
-
 def srgb2linear(c):
     if c < 0.04045:
         return 0.0 if c < 0.0 else c * (1.0 / 12.92)
