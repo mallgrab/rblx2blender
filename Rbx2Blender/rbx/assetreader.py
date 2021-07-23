@@ -2,24 +2,14 @@ import requests
 import io
 import xml.etree.ElementTree as ET
 
+from . assetrequester import AssetRequester
+
 class MeshAsset(object):
     def __init__(self, mesh, texture, mesh_id, texture_id):
         self.mesh = mesh
         self.texture = texture
         self.mesh_id = mesh_id
         self.texture_id = texture_id
-
-def GetAssetFromLink(link: str):
-    asset = requests.get(link)
-    assetLink = asset.json()['location']
-    headers = {
-        'User-Agent': 'Roblox/WinInet',
-        'From': 'youremail@domain.com'  # This is another valid field
-    }
-
-    assetFile = requests.get(assetLink, allow_redirects=True, headers=headers)
-
-    return assetFile
 
 def XMLAssetReader(file: str):
     root = ET.parse(io.StringIO(file)).getroot()
@@ -30,8 +20,8 @@ def XMLAssetReader(file: str):
     mesh_id = mesh_url[mesh_url.find('='):][1:]
     texture_id = texture_url[texture_url.find('='):][1:]
 
-    mesh = io.BytesIO(GetAssetFromLink('https://assetdelivery.roblox.com/v1/assetId/' + mesh_id).content)
-    texture = GetAssetFromLink('https://assetdelivery.roblox.com/v1/assetId/' + texture_id).content
+    mesh = io.BytesIO(AssetRequester.GetAssetFromLink('https://assetdelivery.roblox.com/v1/assetId/' + mesh_id).content)
+    texture = AssetRequester.GetAssetFromLink('https://assetdelivery.roblox.com/v1/assetId/' + texture_id).content
 
     mesh_asset = MeshAsset(mesh, texture, mesh_id, texture_id)
     
@@ -44,20 +34,9 @@ def BinaryAssetReader(file: bytes):
     _ = file[file.find(b"TextureId"):][27:]
     texture_id = _[:_.find(b"PROP")].decode("ascii")
 
-    mesh = io.BytesIO(GetAssetFromLink('https://assetdelivery.roblox.com/v1/assetId/' + mesh_id).content)
-    texture = GetAssetFromLink('https://assetdelivery.roblox.com/v1/assetId/' + texture_id).content
+    mesh = io.BytesIO(AssetRequester.GetAssetFromLink('https://assetdelivery.roblox.com/v1/assetId/' + mesh_id).content)
+    texture = AssetRequester.GetAssetFromLink('https://assetdelivery.roblox.com/v1/assetId/' + texture_id).content
 
     mesh_asset = MeshAsset(mesh, texture, mesh_id, texture_id)
 
     return mesh_asset
-
-def GetMeshFromAsset(link: str):
-    asset = GetAssetFromLink(link)
-
-    if(asset.content.find(b'roblox xmlns') > -1):   
-        mesh_asset = XMLAssetReader(asset.content.decode('ascii').replace("\n", "").replace("\t", ""))
-        return mesh_asset
-
-    if(asset.content.find(b'roblox!') > -1):
-        mesh_asset = BinaryAssetReader(asset.content)
-        return mesh_asset

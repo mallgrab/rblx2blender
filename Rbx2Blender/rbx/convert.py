@@ -8,10 +8,10 @@ from typing import List
 
 from . legacycolors import BrickColor
 from . assetreader import MeshAsset
+from . assetrequester import AssetRequester
+from . types import Part, TileUV, Brick, Texture
 
-#import mesh as rbxmesh
-#import assetreader as assetreader
-from . assetreader import GetAssetFromLink, GetMeshFromAsset
+from . assetrequester import AssetRequester
 from . mesh import GetMeshFromMeshData
 
 import mathutils
@@ -28,61 +28,12 @@ import xml.etree.ElementTree as ET
 # debug
 import timeit
 
-class Part(object):
-    def __init__(self):
-        self.location = [0.0, 0.0, 0.0]
-        self.rotation = [0.0, 0.0, 0.0]
-        self.rotation_matrix = [0,0,0,0,0,0,0,0,0]
-        self.scale = [0.0, 0.0, 0.0]
-        self.brickColor = 0
-        self.brickType = 0
-        self.textures = []
-        self.md5Textures = []
-        self.decals = []
-    
-    def set_rotation_from_matrix(self):
-        matrix = mathutils.Matrix(([0,0,0],[0,0,0],[0,0,0]))
-        matrix[0][0] = self.rotation_matrix[0]
-        matrix[0][1] = self.rotation_matrix[1]
-        matrix[0][2] = self.rotation_matrix[2]
-        matrix[1][0] = self.rotation_matrix[3]
-        matrix[1][1] = self.rotation_matrix[4]
-        matrix[1][2] = self.rotation_matrix[5]
-        matrix[2][0] = self.rotation_matrix[6]
-        matrix[2][1] = self.rotation_matrix[7]
-        matrix[2][2] = self.rotation_matrix[8]
-        GetRotationFromMatrix(self, matrix.to_euler("XYZ"))
-
-class TileUV(object):
-    def __init__(self, U, V):
-        self.TileU = U
-        self.TileV = V
-
-class Texture(object):
-    def __init__(self, textureDir, faceIndex, textureType, tileUV):
-        self.textureDir = textureDir
-        self.faceIdx = faceIndex
-        self.type = textureType
-        self.tileUV = tileUV
-
-class TextureMd5(object):
-    def __init__(self, md5, faceIdx):
-        self.md5 = md5
-        self.faceIdx = faceIdx
-
-class Brick(object):
-    def __init__(self, mesh, scale, textures):
-        self.mesh = mesh
-        self.scale = scale
-        self.textures = textures
-
 PartsList = []
 BrickList = []
 CylinderList = []
 SphereList = []
 
 RotationMatrix = mathutils.Matrix(([0,0,0],[0,0,0],[0,0,0]))
-localTexId = 0
 rbxlx = False
 
 def GetRotationFromMatrix(part: Part, EulerVector3):
@@ -189,62 +140,6 @@ def GetFaceIndex(FaceIdx):
     # Return FaceIdx without converting it if its above 5.
     return switcher.get(FaceIdx, FaceIdx)
 
-def GetLocalTexture(TextureXML, FaceIdx, part: Part, Type, AssetsDir):
-    global localTexId
-    base64buffer = TextureXML.text
-    base64buffer = base64buffer.replace('\n', '')
-    file_content = base64.b64decode(base64buffer)
-
-    if not (os.path.exists(AssetsDir)):
-        os.mkdir(AssetsDir)
-
-    open("tmp", 'wb').write(file_content)
-    assetType = imghdr.what('tmp')
-    textureName = "tex_" + str(localTexId) + "." + str(assetType)
-
-    if (os.path.exists(AssetsDir + "/" + textureName)):
-        os.remove(AssetsDir + "/" + textureName)
-
-    os.rename(r'tmp',r'' + textureName)
-    shutil.move(textureName, AssetsDir)
-
-    textureDir = os.path.abspath(AssetsDir + "/" + textureName)
-    part.textures.append(Texture(textureDir, FaceIdx, Type, TileUV(None, None)))
-    localTexId += 1
-    
-
-def GetOnlineTexture(Link, FaceIdx, part: Part, Type, TileUV: TileUV, RobloxInstallLocation, PlaceName, AssetsDir):
-    assetID = re.sub(r'[^0-9]+', '', Link.lower())
-    localAsset = False
-
-    if not (os.path.exists(PlaceName + "Assets")):
-        os.mkdir(PlaceName + "Assets")
-
-    # Get local asset from the roblox content folder.
-    # This might not work because of backslash formating, depends on blender.
-    if not (assetID):
-        if ("rbxasset://" in Link):
-            assetID = Link.replace('rbxasset://', RobloxInstallLocation)
-            localAsset = True
-
-    if not (localAsset):
-        if (os.path.exists(AssetsDir + "/" + assetID + ".png")):
-            os.remove(AssetsDir + "/" + assetID + ".png")
-        
-        if (os.path.exists(AssetsDir + "/" + assetID + ".jpeg")):
-            os.remove(AssetsDir + "/" + assetID + ".jpeg")
-        
-        if not (os.path.exists(assetID + ".png") or os.path.exists(assetID + ".jpeg")):
-            assetFile = GetAssetFromLink('https://assetdelivery.roblox.com/v1/assetId/' + assetID)
-            
-            open('tmp', 'wb').write(assetFile.content)
-            assetType = imghdr.what('tmp')
-            assetFileName = assetID + "." + str(assetType)
-            os.rename(r'tmp',r'' + assetFileName)
-            shutil.move(assetFileName, AssetsDir)
-            textureDir = os.path.abspath(AssetsDir + "/" + assetFileName)
-            part.textures.append(Texture(textureDir, FaceIdx, Type, TileUV))
-
 def CreatePart(part: Part):
     if (part.brickType == 2):
         mesh = bpy.data.meshes.new('Part_Cylinder')
@@ -334,7 +229,7 @@ def CreatePart(part: Part):
 # Functions that require access to the list do it through the class object.
 
 # Also use https://docs.python.org/3/library/xml.etree.elementtree.html#example (XPath, findall, etc)
-def GetDataFromPlace(root: Element, RobloxInstallLocation, PlaceName, AssetsDir, RobloxPlace):
+def GetDataFromPlace(roblox_place_file):
     global PartsList
     global CylinderList
     global BrickList
@@ -346,7 +241,7 @@ def GetDataFromPlace(root: Element, RobloxInstallLocation, PlaceName, AssetsDir,
     BrickList = []
     SphereList = []
 
-    context = ET.iterparse(RobloxPlace, events=("start", "end"))
+    context = ET.iterparse(roblox_place_file, events=("start", "end"))
     event: Element
     element: Element
     parent_element: List[Element] = []
@@ -460,9 +355,9 @@ def GetDataFromPlace(root: Element, RobloxInstallLocation, PlaceName, AssetsDir,
                         if element.get('name') == 'Face':
                             face_index = GetFaceIndex(int(element.text))
                         if element.tag == 'hash' or element.tag == 'url':
-                            GetOnlineTexture(element.text, face_index, nested_parts[0], 'Decal', TileUV(None, None), RobloxInstallLocation, PlaceName, AssetsDir)
+                            AssetRequester.GetOnlineTexture(element.text, face_index, nested_parts[0], 'Decal', TileUV(None, None))
                         if element.tag == 'binary':
-                            GetLocalTexture(element, face_index, nested_parts[0], 'Decal', AssetsDir)
+                            AssetRequester.GetLocalTexture(element, face_index, nested_parts[0], 'Decal')
 
                 if parent_element[1].attrib.get('class') == 'Texture':
                     if element.tag == 'Content':
@@ -486,11 +381,11 @@ def GetDataFromPlace(root: Element, RobloxInstallLocation, PlaceName, AssetsDir,
                             face_index = GetFaceIndex(int(element.text))
                         
                         if element.tag == 'url':
-                            GetOnlineTexture(element.text, face_index, nested_parts[0], 'Texture', TileUV(TileU, TileV), RobloxInstallLocation, PlaceName, AssetsDir)
+                            AssetRequester.GetOnlineTexture(element.text, face_index, nested_parts[0], 'Texture', TileUV(TileU, TileV))
                         elif element.tag == 'hash':
                             TextureDuplicated(element.text, face_index, nested_parts[0])
                         elif element.tag == 'binary':
-                            GetLocalTexture(element, face_index, nested_parts[0], 'Texture', AssetsDir)
+                            AssetRequester.GetLocalTexture(element, face_index, nested_parts[0], 'Texture')
 
 class StartConverting(bpy.types.Operator):
     bl_idname = "scene.button_operator_convert"
@@ -498,20 +393,16 @@ class StartConverting(bpy.types.Operator):
 
     def execute(self, context):
         global rbxlx
-        global localTexId
-
         bpyscene = context.scene
 
-        RobloxPlace = bpyscene.Place_Path.file_path
-        RobloxInstallLocation = bpyscene.Install_Path.file_path
-        PlaceName = os.path.splitext(os.path.basename(RobloxPlace))[0]
+        roblox_place_file = bpyscene.Place_Path.file_path
+        roblox_install_directory = bpyscene.Install_Path.file_path
+        place_name = os.path.splitext(os.path.basename(roblox_place_file))[0]
         
-        asset_dir = PlaceName + "Assets"
+        asset_dir = place_name + "Assets"
         TextureList = []
-        localTexId = 0
-        
-        rbxlx = RobloxPlace.lower().endswith(('rbxlx'))
-        root = ET.parse(RobloxPlace).getroot()
+
+        rbxlx = roblox_place_file.lower().endswith(('rbxlx'))
 
         timer = 0.0
         start = timeit.default_timer()
@@ -527,7 +418,14 @@ class StartConverting(bpy.types.Operator):
 
         timer_data = 0.0
         timer_data_start = timeit.default_timer()
-        GetDataFromPlace(root, RobloxInstallLocation, PlaceName, asset_dir, RobloxPlace)
+        
+        AssetRequester.asset_dir = asset_dir
+        AssetRequester.place_name = place_name
+        AssetRequester.roblox_install_directory = roblox_install_directory
+        AssetRequester.local_texture_id = 0
+        
+        GetDataFromPlace(roblox_place_file)
+        
         timer_data += (timeit.default_timer() - timer_data_start)
         print("data done:", timer_data)
 
@@ -686,8 +584,7 @@ class StartConverting(bpy.types.Operator):
                                         continue
                 bm.to_mesh(brick.mesh)
         
-        asset_mesh = GetMeshFromAsset("https://assetdelivery.roblox.com/v1/assetId/1091572")
-        #asset_mesh = GetMeshFromAsset("https://assetdelivery.roblox.com/v1/assetId/4771632715")
+        asset_mesh = AssetRequester.GetMeshFromAsset("https://assetdelivery.roblox.com/v1/assetId/1091572")
         mesh = GetMeshFromMeshData(asset_mesh)
         mesh.materials.append(CreateMaterialFromBytes(asset_mesh, asset_dir))
         
