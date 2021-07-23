@@ -7,8 +7,8 @@ import shutil
 import io
 import xml.etree.ElementTree as ET
 
-from . types import TileUV, Part
-from . assetreader import XMLAssetReader, BinaryAssetReader, MeshAssetIds, MeshAssetContent, MeshAsset
+from . types import TileUV, Part, Texture
+from . assetreader import XMLAssetReader, BinaryAssetReader, MeshAssetContent, MeshAsset
 
 class AssetRequester(object):
     place_name = ""
@@ -47,8 +47,7 @@ class AssetRequester(object):
             return mesh_asset
     
     @staticmethod
-    def GetLocalTexture(TextureXML, FaceIdx, part, Type):
-        from . convert import Texture, TileUV, Part
+    def GetLocalTexture(TextureXML, FaceIdx, part: Part, Type):
         base64buffer = TextureXML.text
         base64buffer = base64buffer.replace('\n', '')
         file_content = base64.b64decode(base64buffer)
