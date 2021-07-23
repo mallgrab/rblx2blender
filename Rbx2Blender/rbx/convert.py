@@ -9,7 +9,7 @@ from typing import List
 from . legacycolors import BrickColor
 from . assetreader import MeshAsset
 from . assetrequester import AssetRequester
-from . types import Part, TileUV, Brick, Texture
+from . types import Part, TileUV, Brick, Texture, TextureMd5
 
 from . assetrequester import AssetRequester
 from . mesh import GetMeshFromMeshData
