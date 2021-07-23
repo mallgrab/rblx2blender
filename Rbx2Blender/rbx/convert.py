@@ -420,10 +420,8 @@ def GetDataFromPlace(root: Element, RobloxInstallLocation, PlaceName, AssetsDir,
                         parent_element.pop()
                 
                 if event == 'end':
-                    if rbxlx:
-                        if element.get('name') == 'Color3uint8':
-                            nested_parts[-1].brickColor = int(element.text)
-
+                    if element.get('name') == 'Color3uint8':
+                        nested_parts[-1].brickColor = int(element.text)
                     if element.get('name') == 'BrickColor':
                         nested_parts[-1].brickColor = int(element.text)
 
