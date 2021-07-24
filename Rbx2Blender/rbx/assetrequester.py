@@ -34,14 +34,14 @@ class AssetRequester(object):
     def GetMeshFromAsset(link: str):
         asset = AssetRequester.GetAssetFromLink(link)
 
-        if(asset.content.find(b'roblox xmlns') > -1):   
+        if (asset.content.find(b'roblox xmlns') > -1):   
             mesh_asset_ids = XMLAssetReader(asset.content.decode('ascii').replace("\n", "").replace("\t", ""))
             mesh = io.BytesIO(AssetRequester.GetAssetFromLink(AssetRequester.roblox_asset_api_url + mesh_asset_ids.mesh).content)
             texture = AssetRequester.GetAssetFromLink(AssetRequester.roblox_asset_api_url + mesh_asset_ids.texture).content
             mesh_content = MeshAssetContent(mesh, texture)
             return MeshAsset(mesh_content, mesh_asset_ids)
 
-        if(asset.content.find(b'roblox!') > -1):
+        if (asset.content.find(b'roblox!') > -1):
             mesh_asset_ids = BinaryAssetReader(asset.content)
             mesh = io.BytesIO(AssetRequester.GetAssetFromLink(AssetRequester.roblox_asset_api_url + mesh_asset_ids.mesh).content)
             texture = AssetRequester.GetAssetFromLink(AssetRequester.roblox_asset_api_url + mesh_asset_ids.texture).content
