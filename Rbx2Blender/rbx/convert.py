@@ -26,13 +26,13 @@ import xml.etree.ElementTree as ET
 # debug
 import timeit
 
-PartsList = []
-BrickList = []
-CylinderList = []
-SphereList = []
+class RbxPartContainer(object):
+    PartsList = []
+    BrickList = []
+    CylinderList = []
+    SphereList = []
 
 RotationMatrix = mathutils.Matrix(([0,0,0],[0,0,0],[0,0,0]))
-rbxlx = False
 
 def srgb2linear(c):
     if c < 0.04045:
@@ -91,8 +91,8 @@ def CreateMaterialWithTexture(dir):
     mat.node_tree.links.new(bsdf.inputs['Alpha'], texImage.outputs['Alpha'])
     return mat
 
-def CreateMaterialFromBrickColor(colorID):
-    if (rbxlx):
+def CreateMaterialFromBrickColor(colorID, place_file_rbxlx: bool):
+    if place_file_rbxlx:
         # brickcolor is a 32 integer
         r = (colorID & 0x000000ff)
         g = (colorID & 0x0000ff00) >> 8
@@ -133,7 +133,7 @@ def GetFaceIndex(FaceIdx):
     # Return FaceIdx without converting it if its above 5.
     return switcher.get(FaceIdx, FaceIdx)
 
-def CreatePart(part: Part):
+def CreatePart(part: Part, place_file_rbxlx: bool):
     if (part.brickType == 2):
         mesh = bpy.data.meshes.new('Part_Cylinder')
         basic_cylinder = bpy.data.objects.new("Part_Cylinder", mesh)
@@ -164,11 +164,10 @@ def CreatePart(part: Part):
         
         bpy.context.view_layer.objects.active = basic_cylinder
         basic_cylinder.select_set(True)
-        basic_cylinder.data.materials.append(CreateMaterialFromBrickColor(part.brickColor))
+        basic_cylinder.data.materials.append(CreateMaterialFromBrickColor(part.brickColor, place_file_rbxlx))
         basic_cylinder.select_set(False)
         
-        global CylinderList
-        CylinderList.append(mesh)
+        RbxPartContainer.CylinderList.append(mesh)
                
     if (part.brickType == 1):
         mesh = bpy.data.meshes.new('Part_Brick')
@@ -187,11 +186,10 @@ def CreatePart(part: Part):
         
         bpy.context.view_layer.objects.active = basic_brick
         basic_brick.select_set(True)
-        basic_brick.data.materials.append(CreateMaterialFromBrickColor(part.brickColor))
+        basic_brick.data.materials.append(CreateMaterialFromBrickColor(part.brickColor, place_file_rbxlx))
         basic_brick.select_set(False)
 
-        global BrickList
-        BrickList.append(Brick(mesh, part.scale, part.textures))
+        RbxPartContainer.BrickList.append(Brick(mesh, part.scale, part.textures))
         
     if (part.brickType == 0):
         mesh = bpy.data.meshes.new('Part_Sphere')
@@ -215,7 +213,7 @@ def CreatePart(part: Part):
         bpy.context.view_layer.objects.active = basic_sphere
         basic_sphere.select_set(True)
         bpy.ops.object.modifier_add(type='SUBSURF')
-        basic_sphere.data.materials.append(CreateMaterialFromBrickColor(part.brickColor))
+        basic_sphere.data.materials.append(CreateMaterialFromBrickColor(part.brickColor, place_file_rbxlx))
         bpy.ops.object.shade_smooth()
 
 # Rewrite this into a seperate class where we gather everything into Lists.
@@ -223,16 +221,11 @@ def CreatePart(part: Part):
 
 # Also use https://docs.python.org/3/library/xml.etree.elementtree.html#example (XPath, findall, etc)
 def GetDataFromPlace(roblox_place_file):
-    global PartsList
-    global CylinderList
-    global BrickList
-    global SphereList
-
     # Clearing lists since if the addon was run once there will be stuff in it.
-    PartsList = []
-    CylinderList = []
-    BrickList = []
-    SphereList = []
+    RbxPartContainer.PartsList = []
+    RbxPartContainer.CylinderList = []
+    RbxPartContainer.BrickList = []
+    RbxPartContainer.SphereList = []
 
     context = ET.iterparse(roblox_place_file, events=("start", "end"))
     event: Element
@@ -283,7 +276,7 @@ def GetDataFromPlace(roblox_place_file):
                     current_part = Part()
                     nested_parts.append(current_part)
                 elif event == 'end':
-                    PartsList.append(nested_parts[-1])
+                    RbxPartContainer.PartsList.append(nested_parts[-1])
                     parent_element.pop()
                     nested_parts.pop()
                     current_part = None
@@ -385,7 +378,6 @@ class StartConverting(bpy.types.Operator):
     bl_label = "Start Converting"
 
     def execute(self, context):
-        global rbxlx
         bpyscene = context.scene
 
         roblox_place_file = bpyscene.Place_Path.file_path
@@ -395,7 +387,7 @@ class StartConverting(bpy.types.Operator):
         asset_dir = "placeassets" + "/" + place_name + "_assets"
         TextureList = []
 
-        rbxlx = roblox_place_file.lower().endswith(('rbxlx'))
+        place_file_rbxlx = roblox_place_file.lower().endswith(('rbxlx'))
 
         timer = 0.0
         start = timeit.default_timer()
@@ -435,8 +427,7 @@ class StartConverting(bpy.types.Operator):
 
         # Convert md5 hash to the texture path
         part: Part
-        
-        for part in PartsList:
+        for part in RbxPartContainer.PartsList:
             textureMd5: TextureMd5
             for textureMd5 in part.md5Textures:
                 for TexturePath in TextureList:
@@ -446,8 +437,8 @@ class StartConverting(bpy.types.Operator):
                         textureMd5.md5 = TexturePath
                         part.textures.append(textureMd5)
 
-        for part in PartsList:
-            CreatePart(part)
+        for part in RbxPartContainer.PartsList:
+            CreatePart(part, place_file_rbxlx)
 
         # Rotate place properly
         for obj in bpy.context.scene.objects:
@@ -457,8 +448,8 @@ class StartConverting(bpy.types.Operator):
             obj_selected.rotation_euler.x = radians(90.0)
 
         # Seperate top and bottom part of cylinder so smoothing looks good
-        if CylinderList:
-            for i in CylinderList:
+        if RbxPartContainer.CylinderList:
+            for i in RbxPartContainer.CylinderList:
                 for v in i.polygons:
                     if (v.vertices.__len__() == 12):
                         v.select = True
@@ -473,9 +464,9 @@ class StartConverting(bpy.types.Operator):
 
         bpy.ops.object.mode_set(mode='OBJECT')
 
-        if BrickList:
+        if RbxPartContainer.BrickList:
             brick: Brick
-            for brick in BrickList:
+            for brick in RbxPartContainer.BrickList:
                 bm = bmesh.new()
                 bm.from_mesh(brick.mesh)
                 uv_layer = bm.loops.layers.uv.verify()
