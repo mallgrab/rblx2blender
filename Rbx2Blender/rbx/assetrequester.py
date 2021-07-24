@@ -98,5 +98,5 @@ class AssetRequester(object):
                 asset_filename = asset_id + "." + str(asset_type)
                 os.rename(r'tmp',r'' + asset_filename)
                 shutil.move(asset_filename, AssetRequester.asset_dir)
-                textureDir = os.path.abspath(AssetRequester.asset_dir + "/" + asset_filename)
-                part.textures.append(Texture(textureDir, face_index, type, tile_uv))
+                texture_directory = os.path.abspath(AssetRequester.asset_dir + "/" + asset_filename)
+                part.textures.append(Texture(texture_directory, face_index, type, tile_uv))
