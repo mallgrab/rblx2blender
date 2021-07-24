@@ -52,9 +52,6 @@ class AssetRequester(object):
         base64buffer = base64buffer.replace('\n', '')
         file_content = base64.b64decode(base64buffer)
 
-        if not (os.path.exists(AssetRequester.asset_dir)):
-            os.mkdir(AssetRequester.asset_dir)
-
         open("tmp", 'wb').write(file_content)
         assetType = imghdr.what('tmp')
         textureName = "tex_" + str(AssetRequester.local_texture_id) + "." + str(assetType)
@@ -74,9 +71,6 @@ class AssetRequester(object):
         from . convert import Texture
         assetID = re.sub(r'[^0-9]+', '', Link.lower())
         localAsset = False
-
-        if not (os.path.exists(AssetRequester.place_name + "Assets")):
-            os.mkdir(AssetRequester.place_name + "Assets")
 
         # Get local asset from the roblox content folder.
         # This might not work because of backslash formating, depends on blender.
