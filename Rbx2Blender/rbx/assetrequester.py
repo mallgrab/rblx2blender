@@ -15,6 +15,7 @@ class AssetRequester(object):
     asset_dir = ""
     roblox_install_directory = ""
     local_texture_id = 0
+    roblox_asset_api_url = "https://assetdelivery.roblox.com/v1/assetId/"
 
     @staticmethod
     def GetAssetFromLink(link: str):
@@ -35,16 +36,17 @@ class AssetRequester(object):
 
         if(asset.content.find(b'roblox xmlns') > -1):   
             mesh_asset_ids = XMLAssetReader(asset.content.decode('ascii').replace("\n", "").replace("\t", ""))
-            mesh = io.BytesIO(AssetRequester.GetAssetFromLink('https://assetdelivery.roblox.com/v1/assetId/' + mesh_asset_ids.mesh).content)
-            texture = AssetRequester.GetAssetFromLink('https://assetdelivery.roblox.com/v1/assetId/' + mesh_asset_ids.texture).content
+            mesh = io.BytesIO(AssetRequester.GetAssetFromLink(AssetRequester.roblox_asset_api_url + mesh_asset_ids.mesh).content)
+            texture = AssetRequester.GetAssetFromLink(AssetRequester.roblox_asset_api_url + mesh_asset_ids.texture).content
             mesh_content = MeshAssetContent(mesh, texture)
             return MeshAsset(mesh_content, mesh_asset_ids)
 
         if(asset.content.find(b'roblox!') > -1):
-            # mesh = io.BytesIO(AssetRequester.GetAssetFromLink('https://assetdelivery.roblox.com/v1/assetId/' + mesh_id).content)
-            # texture = AssetRequester.GetAssetFromLink('https://assetdelivery.roblox.com/v1/assetId/' + texture_id).content
-            mesh_asset = BinaryAssetReader(asset.content)
-            return mesh_asset
+            mesh_asset_ids = BinaryAssetReader(asset.content)
+            mesh = io.BytesIO(AssetRequester.GetAssetFromLink(AssetRequester.roblox_asset_api_url + mesh_asset_ids.mesh).content)
+            texture = AssetRequester.GetAssetFromLink(AssetRequester.roblox_asset_api_url + mesh_asset_ids.texture).content
+            mesh_content = MeshAssetContent(mesh, texture)
+            return MeshAsset(mesh_content, mesh_asset_ids)
     
     @staticmethod
     def GetLocalTexture(TextureXML, FaceIdx, part: Part, Type):
