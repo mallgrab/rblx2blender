@@ -32,8 +32,6 @@ class RbxPartContainer(object):
     CylinderList = []
     SphereList = []
 
-RotationMatrix = mathutils.Matrix(([0,0,0],[0,0,0],[0,0,0]))
-
 def srgb2linear(c):
     if c < 0.04045:
         return 0.0 if c < 0.0 else c * (1.0 / 12.92)
