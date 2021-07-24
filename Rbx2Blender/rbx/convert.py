@@ -392,7 +392,7 @@ class StartConverting(bpy.types.Operator):
         roblox_install_directory = bpyscene.Install_Path.file_path
         place_name = os.path.splitext(os.path.basename(roblox_place_file))[0]
         
-        asset_dir = place_name + "Assets"
+        asset_dir = "placeassets" + "/" + place_name + "_assets"
         TextureList = []
 
         rbxlx = roblox_place_file.lower().endswith(('rbxlx'))
@@ -409,6 +409,12 @@ class StartConverting(bpy.types.Operator):
         for i in bpy.data.materials:
             bpy.data.materials.remove(i)
 
+        if not os.path.exists("placeassets"):
+            os.mkdir("placeassets")
+        
+        if not os.path.exists(asset_dir):
+            os.mkdir(asset_dir)
+
         timer_data = 0.0
         timer_data_start = timeit.default_timer()
         
@@ -422,11 +428,8 @@ class StartConverting(bpy.types.Operator):
         timer_data += (timeit.default_timer() - timer_data_start)
         print("data done:", timer_data)
 
-        if not os.path.exists(asset_dir):
-            os.mkdir(asset_dir)
-
         # If place has textures fill up TextureList.
-        if (os.path.exists(asset_dir)):
+        if os.path.exists(asset_dir):
             for i in os.listdir(asset_dir):
                 TextureList.append(os.path.abspath(asset_dir + "/" + i))
 
