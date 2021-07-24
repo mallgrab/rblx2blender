@@ -350,7 +350,7 @@ def GetDataFromPlace(roblox_place_file):
                         if element.tag == 'hash' or element.tag == 'url':
                             AssetRequester.GetOnlineTexture(element.text, face_index, nested_parts[0], 'Decal', TileUV(None, None))
                         if element.tag == 'binary':
-                            AssetRequester.GetLocalTexture(element, face_index, nested_parts[0], 'Decal')
+                            AssetRequester.GetLocalTexture(element.text, face_index, nested_parts[0], 'Decal')
 
                 if parent_element[1].attrib.get('class') == 'Texture':
                     if element.tag == 'Content':
@@ -378,7 +378,7 @@ def GetDataFromPlace(roblox_place_file):
                         elif element.tag == 'hash':
                             TextureDuplicated(element.text, face_index, nested_parts[0])
                         elif element.tag == 'binary':
-                            AssetRequester.GetLocalTexture(element, face_index, nested_parts[0], 'Texture')
+                            AssetRequester.GetLocalTexture(element.text, face_index, nested_parts[0], 'Texture')
 
 class StartConverting(bpy.types.Operator):
     bl_idname = "scene.button_operator_convert"

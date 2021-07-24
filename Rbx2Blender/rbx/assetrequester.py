@@ -20,15 +20,15 @@ class AssetRequester(object):
     @staticmethod
     def GetAssetFromLink(link: str):
         asset = requests.get(link)
-        assetLink = asset.json()['location']
+        asset_link = asset.json()['location']
         headers = {
             'User-Agent': 'Roblox/WinInet',
             'From': 'youremail@domain.com'  # Check with postman later regarding the header roblox studio uses.
         }
 
-        assetFile = requests.get(assetLink, allow_redirects=True, headers=headers)
+        asset_file = requests.get(asset_link, allow_redirects=True, headers=headers)
 
-        return assetFile
+        return asset_file
 
     @staticmethod
     def GetMeshFromAsset(link: str):
@@ -36,65 +36,67 @@ class AssetRequester(object):
 
         if (asset.content.find(b'roblox xmlns') > -1):   
             mesh_asset_ids = XMLAssetReader(asset.content.decode('ascii').replace("\n", "").replace("\t", ""))
+            
             mesh = io.BytesIO(AssetRequester.GetAssetFromLink(AssetRequester.roblox_asset_api_url + mesh_asset_ids.mesh).content)
             texture = AssetRequester.GetAssetFromLink(AssetRequester.roblox_asset_api_url + mesh_asset_ids.texture).content
             mesh_content = MeshAssetContent(mesh, texture)
+            
             return MeshAsset(mesh_content, mesh_asset_ids)
 
         if (asset.content.find(b'roblox!') > -1):
             mesh_asset_ids = BinaryAssetReader(asset.content)
+            
             mesh = io.BytesIO(AssetRequester.GetAssetFromLink(AssetRequester.roblox_asset_api_url + mesh_asset_ids.mesh).content)
             texture = AssetRequester.GetAssetFromLink(AssetRequester.roblox_asset_api_url + mesh_asset_ids.texture).content
             mesh_content = MeshAssetContent(mesh, texture)
+            
             return MeshAsset(mesh_content, mesh_asset_ids)
     
     @staticmethod
-    def GetLocalTexture(TextureXML, FaceIdx, part: Part, Type):
-        base64buffer = TextureXML.text
-        base64buffer = base64buffer.replace('\n', '')
-        file_content = base64.b64decode(base64buffer)
+    def GetLocalTexture(texture_base64: str, face_index: int, part: Part, type: str):
+        texture_base64 = texture_base64.replace('\n', '')
+        file_content = base64.b64decode(texture_base64)
 
         open("tmp", 'wb').write(file_content)
-        assetType = imghdr.what('tmp')
-        textureName = "tex_" + str(AssetRequester.local_texture_id) + "." + str(assetType)
+        asset_type = imghdr.what('tmp')
+        texture_name = "tex_" + str(AssetRequester.local_texture_id) + "." + str(asset_type)
         AssetRequester.local_texture_id += 1
 
-        if (os.path.exists(AssetRequester.asset_dir + "/" + textureName)):
-            os.remove(AssetRequester.asset_dir + "/" + textureName)
+        if (os.path.exists(AssetRequester.asset_dir + "/" + texture_name)):
+            os.remove(AssetRequester.asset_dir + "/" + texture_name)
 
-        os.rename(r'tmp',r'' + textureName)
-        shutil.move(textureName, AssetRequester.asset_dir)
+        os.rename(r'tmp',r'' + texture_name)
+        shutil.move(texture_name, AssetRequester.asset_dir)
 
-        textureDir = os.path.abspath(AssetRequester.asset_dir + "/" + textureName)
-        part.textures.append(Texture(textureDir, FaceIdx, Type, TileUV(None, None)))
+        texture_directory = os.path.abspath(AssetRequester.asset_dir + "/" + texture_name)
+        part.textures.append(Texture(texture_directory, face_index, type, TileUV(None, None)))
 
     @staticmethod
-    def GetOnlineTexture(Link, FaceIdx, part: Part, Type, TileUV: TileUV):
-        from . convert import Texture
-        assetID = re.sub(r'[^0-9]+', '', Link.lower())
-        localAsset = False
+    def GetOnlineTexture(link: str, face_index: int, part: Part, type: str, tile_uv: TileUV):
+        asset_id = re.sub(r'[^0-9]+', '', link.lower())
+        local_asset = False
 
         # Get local asset from the roblox content folder.
         # This might not work because of backslash formating, depends on blender.
-        if not (assetID):
-            if ("rbxasset://" in Link):
-                assetID = Link.replace('rbxasset://', AssetRequester.roblox_install_directory)
-                localAsset = True
+        if not asset_id:
+            if ("rbxasset://" in link):
+                asset_id = link.replace('rbxasset://', AssetRequester.roblox_install_directory)
+                local_asset = True
 
-        if not (localAsset):
-            if (os.path.exists(AssetRequester.asset_dir + "/" + assetID + ".png")):
-                os.remove(AssetRequester.asset_dir + "/" + assetID + ".png")
+        if not local_asset:
+            if (os.path.exists(AssetRequester.asset_dir + "/" + asset_id + ".png")):
+                os.remove(AssetRequester.asset_dir + "/" + asset_id + ".png")
 
-            if (os.path.exists(AssetRequester.asset_dir + "/" + assetID + ".jpeg")):
-                os.remove(AssetRequester.asset_dir + "/" + assetID + ".jpeg")
+            if (os.path.exists(AssetRequester.asset_dir + "/" + asset_id + ".jpeg")):
+                os.remove(AssetRequester.asset_dir + "/" + asset_id + ".jpeg")
 
-            if not (os.path.exists(assetID + ".png") or os.path.exists(assetID + ".jpeg")):
-                assetFile = AssetRequester.GetAssetFromLink('https://assetdelivery.roblox.com/v1/assetId/' + assetID)
+            if not (os.path.exists(asset_id + ".png") or os.path.exists(asset_id + ".jpeg")):
+                asset_file = AssetRequester.GetAssetFromLink('https://assetdelivery.roblox.com/v1/assetId/' + asset_id)
 
-                open('tmp', 'wb').write(assetFile.content)
-                assetType = imghdr.what('tmp')
-                assetFileName = assetID + "." + str(assetType)
-                os.rename(r'tmp',r'' + assetFileName)
-                shutil.move(assetFileName, AssetRequester.asset_dir)
-                textureDir = os.path.abspath(AssetRequester.asset_dir + "/" + assetFileName)
-                part.textures.append(Texture(textureDir, FaceIdx, Type, TileUV))
+                open('tmp', 'wb').write(asset_file.content)
+                asset_type = imghdr.what('tmp')
+                asset_filename = asset_id + "." + str(asset_type)
+                os.rename(r'tmp',r'' + asset_filename)
+                shutil.move(asset_filename, AssetRequester.asset_dir)
+                textureDir = os.path.abspath(AssetRequester.asset_dir + "/" + asset_filename)
+                part.textures.append(Texture(textureDir, face_index, type, tile_uv))
