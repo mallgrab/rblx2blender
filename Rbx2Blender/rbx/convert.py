@@ -9,8 +9,8 @@ from typing import List
 from . legacycolors import BrickColor
 from . assetreader import MeshAsset
 from . assetrequester import AssetRequester
-from . types import *
 from . mesh import GetMeshFromMeshData
+from . types import *
 
 import mathutils
 import bmesh
@@ -580,7 +580,7 @@ class StartConverting(bpy.types.Operator):
                                         continue
                 bm.to_mesh(brick.mesh)
         
-        asset_mesh = AssetRequester.GetMeshFromAsset("https://assetdelivery.roblox.com/v1/assetId/1091572")
+        asset_mesh = AssetRequester.GetMeshFromAsset("https://assetdelivery.roblox.com/v1/assetId/4771632715")
         mesh = GetMeshFromMeshData(asset_mesh)
         mesh.materials.append(CreateMaterialFromBytes(asset_mesh, asset_dir))
         
