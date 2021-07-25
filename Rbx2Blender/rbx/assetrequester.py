@@ -90,6 +90,8 @@ class AssetRequester(object):
             if (os.path.exists(AssetRequester.asset_dir + "/" + asset_id + ".jpeg")):
                 os.remove(AssetRequester.asset_dir + "/" + asset_id + ".jpeg")
 
+            # Todo: if the file already exists do not request the same asset while also not creating a new texture file
+            # instead reuse the already created one
             if not (os.path.exists(asset_id + ".png") or os.path.exists(asset_id + ".jpeg")):
                 asset_file = AssetRequester.GetAssetFromLink('https://assetdelivery.roblox.com/v1/assetId/' + asset_id)
 
