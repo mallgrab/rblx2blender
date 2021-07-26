@@ -5,6 +5,7 @@ import imghdr
 import re
 import shutil
 import io
+import glob
 import xml.etree.ElementTree as ET
 
 from . types import TileUV, Part, Texture
@@ -84,21 +85,19 @@ class AssetRequester(object):
                 local_asset = True
 
         if not local_asset:
-            if (os.path.exists(AssetRequester.asset_dir + "/" + asset_id + ".png")):
-                os.remove(AssetRequester.asset_dir + "/" + asset_id + ".png")
+            for file in glob.glob(AssetRequester.asset_dir + "/" + asset_id + ".*"):
+                _v = file
+                if not os.path.exists(file):
+                    asset_file = AssetRequester.GetAssetFromLink('https://assetdelivery.roblox.com/v1/assetId/' + asset_id)
 
-            if (os.path.exists(AssetRequester.asset_dir + "/" + asset_id + ".jpeg")):
-                os.remove(AssetRequester.asset_dir + "/" + asset_id + ".jpeg")
-
-            # Todo: if the file already exists do not request the same asset while also not creating a new texture file
-            # instead reuse the already created one
-            if not (os.path.exists(asset_id + ".png") or os.path.exists(asset_id + ".jpeg")):
-                asset_file = AssetRequester.GetAssetFromLink('https://assetdelivery.roblox.com/v1/assetId/' + asset_id)
-
-                open('tmp', 'wb').write(asset_file.content)
-                asset_type = imghdr.what('tmp')
-                asset_filename = asset_id + "." + str(asset_type)
-                os.rename(r'tmp',r'' + asset_filename)
-                shutil.move(asset_filename, AssetRequester.asset_dir)
-                texture_directory = os.path.abspath(AssetRequester.asset_dir + "/" + asset_filename)
-                part.textures.append(Texture(texture_directory, face_index, type, tile_uv))
+                    open('tmp', 'wb').write(asset_file.content)
+                    asset_type = imghdr.what('tmp')
+                    asset_filename = asset_id + "." + str(asset_type)
+                    os.rename(r'tmp',r'' + asset_filename)
+                    shutil.move(asset_filename, AssetRequester.asset_dir)
+                else:
+                    asset_filename = os.path.basename(file)
+                    break
+            
+            texture_directory = os.path.abspath(AssetRequester.asset_dir + "/" + asset_filename)
+            part.textures.append(Texture(texture_directory, face_index, type, tile_uv))
