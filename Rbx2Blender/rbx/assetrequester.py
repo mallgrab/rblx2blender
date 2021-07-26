@@ -87,6 +87,8 @@ class AssetRequester(object):
         if not local_asset:
             for file in glob.glob(AssetRequester.asset_dir + "/" + asset_id + ".*"):
                 _v = file
+                
+                # Don't download the same asset again if we already have it locally.
                 if not os.path.exists(file):
                     asset_file = AssetRequester.GetAssetFromLink('https://assetdelivery.roblox.com/v1/assetId/' + asset_id)
 
