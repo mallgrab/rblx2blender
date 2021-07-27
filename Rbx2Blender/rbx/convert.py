@@ -279,7 +279,9 @@ def GetDataFromPlace(roblox_place_file):
                     nested_parts.pop()
                     current_part = None
 
-            if class_attrib == 'Decal' or class_attrib == 'Texture':
+            if (class_attrib == 'Decal' or 
+                class_attrib == 'Texture' or 
+                class_attrib == 'SpecialMesh'):
                 if event == 'start':
                     parent_element.append(element)
                 elif event == 'end':
