@@ -85,19 +85,20 @@ class AssetRequester(object):
                 local_asset = True
 
         if not local_asset:
-            for file in glob.glob(AssetRequester.asset_dir + "/" + asset_id + ".*"):
-                # Don't download the same asset again if we already have it locally.
-                if not os.path.exists(file):
-                    asset_file = AssetRequester.GetAssetFromLink('https://assetdelivery.roblox.com/v1/assetId/' + asset_id)
-
-                    open('tmp', 'wb').write(asset_file.content)
-                    asset_type = imghdr.what('tmp')
-                    asset_filename = asset_id + "." + str(asset_type)
-                    os.rename(r'tmp',r'' + asset_filename)
-                    shutil.move(asset_filename, AssetRequester.asset_dir)
-                else:
-                    asset_filename = os.path.basename(file)
-                    break
+            file = ""
+            for directory_file in glob.glob(AssetRequester.asset_dir + "/" + asset_id + ".*"):
+                file = directory_file
+            
+            # Don't download the same asset again if we already have it locally.
+            if not os.path.exists(file):
+                asset_file = AssetRequester.GetAssetFromLink('https://assetdelivery.roblox.com/v1/assetId/' + asset_id)
+                open('tmp', 'wb').write(asset_file.content)
+                asset_type = imghdr.what('tmp')
+                asset_filename = asset_id + "." + str(asset_type)
+                os.rename(r'tmp',r'' + asset_filename)
+                shutil.move(asset_filename, AssetRequester.asset_dir)
+            else:
+                asset_filename = os.path.basename(file)
             
             texture_directory = os.path.abspath(AssetRequester.asset_dir + "/" + asset_filename)
             part.textures.append(Texture(texture_directory, face_index, type, tile_uv))
