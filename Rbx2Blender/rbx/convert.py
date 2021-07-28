@@ -330,6 +330,8 @@ def GetDataFromPlace(roblox_place_file):
                                 nested_parts[-1].scale[vector3_index.get(element.tag)] = float(element.text)
 
             if len(parent_element) > 1:
+                if parent_element[1].attrib.get('class') == 'SpecialMesh':
+                    print("contains mesh")
                 if parent_element[1].attrib.get('class') == 'Decal':
                     if element.tag == 'Content':
                         if event == 'start':
