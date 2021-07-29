@@ -339,7 +339,8 @@ def GetDataFromPlace(roblox_place_file):
                     
                     if event == 'end':
                         if element.tag == 'url':
-                            mesh = AssetRequester.GetMeshFromId(element.text)
+                            # for now the part will contain the mesh id
+                            nested_parts[-1].meshes = AssetRequester.GetAssetId(element.text)
 
                 if parent_element[1].attrib.get('class') == 'Decal':
                     if element.tag == 'Content':
