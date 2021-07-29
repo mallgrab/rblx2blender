@@ -9,7 +9,8 @@ import glob
 import xml.etree.ElementTree as ET
 
 from . types import TileUV, Part, Texture
-from . assetreader import XMLAssetReader, BinaryAssetReader, MeshAssetContent, MeshAsset
+from . assetreader import XMLAssetReader, BinaryAssetReader, MeshAssetContent, MeshAsset, MeshAssetIds
+from . mesh import GetMeshFromMeshData
 
 class AssetRequester(object):
     place_name = ""
@@ -31,8 +32,18 @@ class AssetRequester(object):
 
         return asset_file
 
+    def __GetAssetFromId(id: str):
+        asset_id = AssetRequester.__GetAssetId(id)
+        link = AssetRequester.roblox_asset_api_url + asset_id
+        asset = AssetRequester.GetAssetFromLink(link)
+        return asset.content
+
+    def __GetAssetId(id: str):
+        asset_id = id.replace('rbxassetid://', '')
+        return asset_id
+
     @staticmethod
-    def GetMeshFromAsset(link: str):
+    def GetMeshFromHat(link: str):
         asset = AssetRequester.GetAssetFromLink(link)
 
         if (asset.content.find(b'roblox xmlns') > -1):   
@@ -43,8 +54,7 @@ class AssetRequester(object):
             mesh_content = MeshAssetContent(mesh, texture)
             
             return MeshAsset(mesh_content, mesh_asset_ids)
-
-        if (asset.content.find(b'roblox!') > -1):
+        elif (asset.content.find(b'roblox!') > -1):
             mesh_asset_ids = BinaryAssetReader(asset.content)
             
             mesh = io.BytesIO(AssetRequester.GetAssetFromLink(AssetRequester.roblox_asset_api_url + mesh_asset_ids.mesh).content)
@@ -52,6 +62,22 @@ class AssetRequester(object):
             mesh_content = MeshAssetContent(mesh, texture)
             
             return MeshAsset(mesh_content, mesh_asset_ids)
+        else:
+            print("Not a valid hat link")
+            return None
+    
+    @staticmethod
+    def GetMeshFromId(id: str):
+        asset = AssetRequester.__GetAssetFromId(id)
+        mesh_id = AssetRequester.__GetAssetId(id)
+        mesh_file = io.BytesIO(asset)
+        
+        mesh_content = MeshAssetContent(mesh_file, None)
+        mesh_asset_ids = MeshAssetIds(mesh_id, None)
+        mesh_asset = MeshAsset(mesh_content, mesh_asset_ids)
+        
+        mesh = GetMeshFromMeshData(mesh_asset)
+        return mesh
     
     @staticmethod
     def GetLocalTexture(texture_base64: str, face_index: int, part: Part, type: str):

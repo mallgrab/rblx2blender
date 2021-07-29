@@ -331,13 +331,23 @@ def GetDataFromPlace(roblox_place_file):
 
             if len(parent_element) > 1:
                 if parent_element[1].attrib.get('class') == 'SpecialMesh':
-                    print("contains mesh")
+                    if element.tag == 'Content':
+                        if event == 'start':
+                            parent_element.append(element)
+                        elif event == 'end':
+                            parent_element.pop()
+                    
+                    if event == 'end':
+                        if element.tag == 'url':
+                            mesh = AssetRequester.GetMeshFromId(element.text)
+
                 if parent_element[1].attrib.get('class') == 'Decal':
                     if element.tag == 'Content':
                         if event == 'start':
                             parent_element.append(element)
                         elif event == 'end':
                             parent_element.pop()
+                        
                     
                     if event == 'end':
                         if element.get('name') == 'Face':
@@ -573,9 +583,10 @@ class StartConverting(bpy.types.Operator):
                                         continue
                 bm.to_mesh(brick.mesh)
         
-        asset_mesh = AssetRequester.GetMeshFromAsset("https://assetdelivery.roblox.com/v1/assetId/4771632715")
-        mesh = GetMeshFromMeshData(asset_mesh)
-        mesh.materials.append(CreateMaterialFromBytes(asset_mesh, asset_dir))
+        # Testing
+        # asset_mesh = AssetRequester.GetMeshFromAsset("https://assetdelivery.roblox.com/v1/assetId/4771632715")
+        # mesh = GetMeshFromMeshData(asset_mesh)
+        # mesh.materials.append(CreateMaterialFromBytes(asset_mesh, asset_dir))
         
         timer += (timeit.default_timer() - start)
         print("done", timer)
