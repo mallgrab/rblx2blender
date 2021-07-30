@@ -244,17 +244,11 @@ def GetMeshFromMeshData(data: MeshAsset, part: Part):
     part.location[1] = z * -1
     part.location[2] = y
 
-    # scale is not being set properly
-    # should be 1.0 but its 2.0
-    # also 1.0 meshes are 2x their size
-    #part.scale[0] = part.scale[0] * 0.5
-    #part.scale[1] = part.scale[1] * 0.5
-    #part.scale[2] = part.scale[2] * 0.5
+    # 1.0 - 1.01 meshes are 2x their size
+    part.scale[0] = part.scale[0] * 0.5
+    part.scale[1] = part.scale[1] * 0.5
+    part.scale[2] = part.scale[2] * 0.5
 
-    part.scale[0] = 0.5
-    part.scale[1] = 0.5
-    part.scale[2] = 0.5
-    
     basic_brick.location = part.location
     basic_brick.scale = part.scale
     

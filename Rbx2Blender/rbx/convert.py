@@ -327,15 +327,17 @@ def GetDataFromPlace(roblox_place_file):
 
             if len(parent_element) > 1:
                 if parent_element[1].attrib.get('class') == 'SpecialMesh':
-                    if element.tag == 'Content':
+                    if (element.attrib.get('name') == 'MeshId' or 
+                        element.attrib.get('name') == 'Scale'):
                         if event == 'start':
                             parent_element.append(element)
                         elif event == 'end':
                             parent_element.pop()
                     
                     if event == 'end':
+                        if parent_element[-1].attrib.get('name') == 'Scale':
+                            nested_parts[-1].scale[vector3_index.get(element.tag)] = float(element.text)
                         if element.tag == 'url':
-                            # for now the part will contain the mesh id
                             nested_parts[-1].meshes.append(AssetRequester.GetAssetId(element.text))
 
                 if parent_element[1].attrib.get('class') == 'Decal':
