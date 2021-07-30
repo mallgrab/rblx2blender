@@ -340,7 +340,7 @@ def GetDataFromPlace(roblox_place_file):
                     if event == 'end':
                         if element.tag == 'url':
                             # for now the part will contain the mesh id
-                            nested_parts[-1].meshes = AssetRequester.GetAssetId(element.text)
+                            nested_parts[-1].meshes.append(AssetRequester.GetAssetId(element.text))
 
                 if parent_element[1].attrib.get('class') == 'Decal':
                     if element.tag == 'Content':
@@ -451,6 +451,9 @@ class StartConverting(bpy.types.Operator):
                         part.textures.append(textureMd5)
 
         for part in RbxPartContainer.PartsList:
+            if part.meshes:
+                AssetRequester.GetMeshFromId(part.meshes[0], part)
+                continue
             CreatePart(part, place_file_rbxlx)
 
         # Rotate place properly

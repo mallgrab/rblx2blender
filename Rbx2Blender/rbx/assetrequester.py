@@ -33,16 +33,19 @@ class AssetRequester(object):
         return asset_file
 
     @staticmethod
-    def GetAssetFromId(id: str):
-        asset_id = AssetRequester.GetAssetId(id)
+    def GetAssetFromId(asset_id: str):
         link = AssetRequester.roblox_asset_api_url + asset_id
         asset = AssetRequester.GetAssetFromLink(link)
         return asset.content
 
     @staticmethod
     def GetAssetId(id: str):
-        asset_id = id.replace('rbxassetid://', '')
-        asset_id = id.replace('http://www.roblox.com/asset/?id=', '')
+        if id.find('rbxassetid://') > -1:
+            asset_id = id.replace('rbxassetid://', '')
+        elif id.find('http://www.roblox.com/asset/?id=') > -1:
+            asset_id = id.replace('http://www.roblox.com/asset/?id=', '')
+        else:
+            asset_id = None
         return asset_id
 
     @staticmethod
@@ -71,7 +74,7 @@ class AssetRequester(object):
     
     @staticmethod
     # add extra arguments to create a blender mesh at xyz pos and hw scale
-    def GetMeshFromId(id: str):
+    def GetMeshFromId(id: str, part: Part):
         asset = AssetRequester.GetAssetFromId(id)
         mesh_id = AssetRequester.GetAssetId(id)
         mesh_file = io.BytesIO(asset)
@@ -80,7 +83,7 @@ class AssetRequester(object):
         mesh_asset_ids = MeshAssetIds(mesh_id, None)
         mesh_asset = MeshAsset(mesh_content, mesh_asset_ids)
         
-        mesh = GetMeshFromMeshData(mesh_asset)
+        mesh = GetMeshFromMeshData(mesh_asset, part)
         return mesh
     
     @staticmethod

@@ -7,6 +7,7 @@ import bmesh
 import bpy
 
 from . assetreader import MeshAsset
+from . types import Part
 
 path = "./meshes/MeshTesting_V3"
 
@@ -229,13 +230,33 @@ def GetMeshData(data):
         print("Faulty mesh data")
         return None
 
-def GetMeshFromMeshData(data: MeshAsset):
+def GetMeshFromMeshData(data: MeshAsset, part: Part):
     mesh_data = GetMeshData(data.content.mesh)
     mesh_name = 'Mesh_' + str(mesh_data.version)
     mesh = bpy.data.meshes.new('mesh')
     
     basic_brick = bpy.data.objects.new(mesh_name, mesh)
     bpy.context.collection.objects.link(basic_brick)
+    
+    # xyz has to get flipped for some reason?
+    y = part.location[1]
+    z = part.location[2]
+    part.location[1] = z * -1
+    part.location[2] = y
+
+    # scale is not being set properly
+    # should be 1.0 but its 2.0
+    # also 1.0 meshes are 2x their size
+    #part.scale[0] = part.scale[0] * 0.5
+    #part.scale[1] = part.scale[1] * 0.5
+    #part.scale[2] = part.scale[2] * 0.5
+
+    part.scale[0] = 0.5
+    part.scale[1] = 0.5
+    part.scale[2] = 0.5
+    
+    basic_brick.location = part.location
+    basic_brick.scale = part.scale
     
     bm = bmesh.new()
     bm.from_mesh(mesh)
@@ -260,9 +281,6 @@ def GetMeshFromMeshData(data: MeshAsset):
                 loop_uv.uv = mesh_data.vertex_uvs[idx]
                 idx += 1
 
-        bm.to_mesh(mesh)
-        bm.free()
-    
     elif (mesh_data.version >= 2.00): 
         for idx, face in enumerate(mesh_data.vertex_faces):
             t_v1 = bm.verts.new(mesh_data.vertex_positions[face[0]])
@@ -287,7 +305,8 @@ def GetMeshFromMeshData(data: MeshAsset):
                 loop_uv = loop[uv_layer]
                 loop_uv.uv = current_vertex_uv
 
-        bm.to_mesh(mesh)
-        bm.free()
+    bm.to_mesh(mesh)
+    bm.free()
+
 
     return mesh
