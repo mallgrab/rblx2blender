@@ -230,10 +230,6 @@ def GetDataFromPlace(roblox_place_file):
     element: Element
     parent_element: List[Element] = []
     nested_parts: List[Part] = []
-
-    # location_list = [0.0, 0.0, 0.0]
-    # part_size = [0.0, 0.0, 0.0]
-    # rotation_list = [0,0,0,0,0,0,0,0,0]
     current_part = None
 
     vector3_index = {
