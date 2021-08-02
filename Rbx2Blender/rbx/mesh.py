@@ -6,7 +6,7 @@ import ast
 import bmesh
 import bpy
 
-from . assetreader import MeshAsset
+from . assetreader import MeshAsset, HatAsset
 from . types import Part
 
 path = "./meshes/MeshTesting_V3"
@@ -231,7 +231,7 @@ def GetMeshData(data):
         return None
 
 def GetMeshFromMeshData(data: MeshAsset, part: Part):
-    mesh_data = GetMeshData(data.content.mesh)
+    mesh_data = GetMeshData(data.mesh_content)
     mesh_name = 'Mesh_' + str(mesh_data.version)
     mesh = bpy.data.meshes.new('mesh')
     
