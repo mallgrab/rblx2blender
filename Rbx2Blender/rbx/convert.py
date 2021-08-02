@@ -413,9 +413,6 @@ class StartConverting(bpy.types.Operator):
 
         place_file_rbxlx = roblox_place_file.lower().endswith(('rbxlx'))
 
-        timer = 0.0
-        start = timeit.default_timer()
-
         for i in context.selectable_objects:
             i.select_set(False)
 
@@ -431,8 +428,8 @@ class StartConverting(bpy.types.Operator):
         if not os.path.exists(asset_dir):
             os.mkdir(asset_dir)
 
-        timer_data = 0.0
-        timer_data_start = timeit.default_timer()
+        start_convert = timeit.default_timer()
+        start_data = timeit.default_timer()
         
         AssetRequester.asset_dir = asset_dir
         AssetRequester.place_name = place_name
@@ -441,8 +438,8 @@ class StartConverting(bpy.types.Operator):
         
         GetDataFromPlace(roblox_place_file)
         
-        timer_data += (timeit.default_timer() - timer_data_start)
-        print("data done:", timer_data)
+        end_data = timeit.default_timer()
+        print("data done:", end_data - start_data)
 
         # If place has textures fill up TextureList.
         if os.path.exists(asset_dir):
@@ -461,15 +458,21 @@ class StartConverting(bpy.types.Operator):
                         textureMd5.md5 = TexturePath
                         part.textures.append(textureMd5)
 
+
         for part in RbxPartContainer.PartsList:
             if part.meshes:
                 mesh = AssetRequester.GetMeshFromId(part.meshes[0], part)
                 if part.mesh_textures:
+                    start = timeit.default_timer()
                     mesh_texture = AssetRequester.GetAssetFromLink(AssetRequester.roblox_asset_api_url + part.mesh_textures[0]).content
+                    stop = timeit.default_timer()
+                    print("mesh done:", stop - start)
+                    
                     texture_name = "tex_" + str(part.mesh_textures[0])
                     mesh.materials.append(CreateMaterialFromBytes(mesh_texture, texture_name))
                 continue
             CreatePart(part, place_file_rbxlx)
+
 
         # Rotate place properly
         for obj in bpy.context.scene.objects:
@@ -607,7 +610,7 @@ class StartConverting(bpy.types.Operator):
         # mesh = GetMeshFromMeshData(asset_mesh)
         # mesh.materials.append(CreateMaterialFromBytes(asset_mesh, asset_dir))
         
-        timer += (timeit.default_timer() - start)
-        print("done", timer)
+        stop_convert = timeit.default_timer()
+        print("done", stop_convert - start_convert)
         return {'FINISHED'}
 
