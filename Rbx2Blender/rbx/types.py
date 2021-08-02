@@ -35,6 +35,7 @@ class Part(object):
         self.md5Textures = []
         self.decals = []
         self.meshes = []
+        self.mesh_textures = []
 
     def apply_euler_to_rotation(self, EulerVector3):
         self.rotation[0] = EulerVector3[0]

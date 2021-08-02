@@ -7,7 +7,7 @@ from xml.etree.ElementTree import Element
 from typing import List
 
 from . legacycolors import BrickColor
-from . assetreader import MeshAsset
+from . assetreader import MeshAsset, HatAsset
 from . assetrequester import AssetRequester
 from . mesh import GetMeshFromMeshData
 from . types import *
@@ -21,6 +21,7 @@ import hashlib
 import imghdr
 import re
 import shutil
+import glob
 import xml.etree.ElementTree as ET
 
 # debug
@@ -55,18 +56,23 @@ def CreateMaterial(r, g, b):
     mat.diffuse_color=(srgb2linear(r/255), srgb2linear(g/255), srgb2linear(b/255), 1.0)
     return mat
 
-def CreateMaterialFromBytes(data: MeshAsset, AssetsDir: str):
-    open("tmp", 'wb').write(data.content.texture)
-    assetType = imghdr.what('tmp')
-    textureName = "tex_" + str(data.ids.texture) + "." + str(assetType)
+def CreateMaterialFromBytes(data: bytes, texture_name: str):
 
-    if (os.path.exists(AssetsDir + "/" + textureName)):
-        os.remove(AssetsDir + "/" + textureName)
+    asset_name = AssetRequester.asset_dir + "/" + texture_name
+    file = None
 
-    os.rename(r'tmp',r'' + textureName)
-    shutil.move(textureName, AssetsDir)
-
-    texture_path = os.path.abspath(AssetsDir + "/" + textureName)
+    for directory_file in glob.glob(AssetRequester.asset_dir + "/" + texture_name + ".*"):
+        file = directory_file
+    
+    if not file:
+        open("tmp", 'wb').write(data)
+        assetType = imghdr.what('tmp')
+        texture_name = texture_name + "." + str(assetType)
+        os.rename(r'tmp',r'' + texture_name)
+        shutil.move(texture_name, AssetRequester.asset_dir)
+        texture_path = os.path.abspath(AssetRequester.asset_dir + "/" + texture_name)
+    else:
+        texture_path =  os.path.abspath(file)
 
     return CreateMaterialWithTexture(texture_path)
 
@@ -327,7 +333,8 @@ def GetDataFromPlace(roblox_place_file):
 
             if len(parent_element) > 1:
                 if parent_element[1].attrib.get('class') == 'SpecialMesh':
-                    if (element.attrib.get('name') == 'MeshId' or 
+                    if (element.attrib.get('name') == 'MeshId' or
+                        element.attrib.get('name') == 'TextureId' or
                         element.attrib.get('name') == 'Scale'):
                         if event == 'start':
                             parent_element.append(element)
@@ -337,8 +344,14 @@ def GetDataFromPlace(roblox_place_file):
                     if event == 'end':
                         if parent_element[-1].attrib.get('name') == 'Scale':
                             nested_parts[-1].scale[vector3_index.get(element.tag)] = float(element.text)
+                        
                         if element.tag == 'url':
-                            nested_parts[-1].meshes.append(AssetRequester.GetAssetId(element.text))
+                            if parent_element[-1].attrib.get('name') == 'MeshId':
+                                mesh_id = AssetRequester.GetAssetId(element.text)
+                                nested_parts[-1].meshes.append(mesh_id)
+                            elif parent_element[-1].attrib.get('name') == 'TextureId':
+                                texture_id = AssetRequester.GetAssetId(element.text)
+                                nested_parts[-1].mesh_textures.append(texture_id)
 
                 if parent_element[1].attrib.get('class') == 'Decal':
                     if element.tag == 'Content':
@@ -450,7 +463,11 @@ class StartConverting(bpy.types.Operator):
 
         for part in RbxPartContainer.PartsList:
             if part.meshes:
-                AssetRequester.GetMeshFromId(part.meshes[0], part)
+                mesh = AssetRequester.GetMeshFromId(part.meshes[0], part)
+                if part.mesh_textures:
+                    mesh_texture = AssetRequester.GetAssetFromLink(AssetRequester.roblox_asset_api_url + part.mesh_textures[0]).content
+                    texture_name = "tex_" + str(part.mesh_textures[0])
+                    mesh.materials.append(CreateMaterialFromBytes(mesh_texture, texture_name))
                 continue
             CreatePart(part, place_file_rbxlx)
 
