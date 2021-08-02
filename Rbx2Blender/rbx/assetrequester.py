@@ -9,7 +9,7 @@ import glob
 import xml.etree.ElementTree as ET
 
 from . types import TileUV, Part, Texture
-from . assetreader import XMLAssetReader, BinaryAssetReader, MeshAssetContent, MeshAsset, MeshAssetIds
+from . assetreader import HatXMLAssetReader, HatBinaryAssetReader, HatAssetContent, HatAsset, HatAssetIds, MeshAsset
 from . mesh import GetMeshFromMeshData
 
 class AssetRequester(object):
@@ -53,21 +53,21 @@ class AssetRequester(object):
         asset = AssetRequester.GetAssetFromLink(link)
 
         if (asset.content.find(b'roblox xmlns') > -1):   
-            mesh_asset_ids = XMLAssetReader(asset.content.decode('ascii').replace("\n", "").replace("\t", ""))
+            mesh_asset_ids = HatXMLAssetReader(asset.content.decode('ascii').replace("\n", "").replace("\t", ""))
             
             mesh = io.BytesIO(AssetRequester.GetAssetFromLink(AssetRequester.roblox_asset_api_url + mesh_asset_ids.mesh).content)
             texture = AssetRequester.GetAssetFromLink(AssetRequester.roblox_asset_api_url + mesh_asset_ids.texture).content
-            mesh_content = MeshAssetContent(mesh, texture)
+            mesh_content = HatAssetContent(mesh, texture)
             
-            return MeshAsset(mesh_content, mesh_asset_ids)
+            return HatAsset(mesh_content, mesh_asset_ids)
         elif (asset.content.find(b'roblox!') > -1):
-            mesh_asset_ids = BinaryAssetReader(asset.content)
+            mesh_asset_ids = HatBinaryAssetReader(asset.content)
             
             mesh = io.BytesIO(AssetRequester.GetAssetFromLink(AssetRequester.roblox_asset_api_url + mesh_asset_ids.mesh).content)
             texture = AssetRequester.GetAssetFromLink(AssetRequester.roblox_asset_api_url + mesh_asset_ids.texture).content
-            mesh_content = MeshAssetContent(mesh, texture)
+            mesh_content = HatAssetContent(mesh, texture)
             
-            return MeshAsset(mesh_content, mesh_asset_ids)
+            return HatAsset(mesh_content, mesh_asset_ids)
         else:
             print("Not a valid hat link")
             return None
@@ -77,11 +77,9 @@ class AssetRequester(object):
     def GetMeshFromId(id: str, part: Part):
         asset = AssetRequester.GetAssetFromId(id)
         mesh_id = AssetRequester.GetAssetId(id)
-        mesh_file = io.BytesIO(asset)
+        mesh_content = io.BytesIO(asset)
         
-        mesh_content = MeshAssetContent(mesh_file, None)
-        mesh_asset_ids = MeshAssetIds(mesh_id, None)
-        mesh_asset = MeshAsset(mesh_content, mesh_asset_ids)
+        mesh_asset = MeshAsset(mesh_content, mesh_id)
         
         mesh = GetMeshFromMeshData(mesh_asset, part)
         return mesh
