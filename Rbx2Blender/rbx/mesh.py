@@ -99,17 +99,19 @@ def GetTotalVertices(file: BufferedReader):
 
 def GetBracketArray(file: BufferedReader):
     byte_array = bytearray()
+    numbers = []
     while True:
-        tmp_byte = file.read(1)
-        if (tmp_byte == b"]"):
-            byte_array.extend(tmp_byte)
-            break
-        else:
-            byte_array.extend(tmp_byte)
-
-    # slow, we need to write our own parser
-    bracket_array = ast.literal_eval(byte_array.decode('ascii'))
-    return(bracket_array)
+            tmp_byte = file.read(1)
+            if tmp_byte == b"[":
+                continue
+            if tmp_byte == b",":
+                numbers.append(float(byte_array.decode('ascii')))
+                byte_array = bytearray()
+            elif tmp_byte == b"]":
+                numbers.append(float(byte_array.decode('ascii')))
+                return numbers
+            else:
+                byte_array.extend(tmp_byte)
 
 def GetMeshVersion(file: BufferedReader):
     file.read(1) # Space
