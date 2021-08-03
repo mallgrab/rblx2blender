@@ -5,6 +5,7 @@ import struct
 import ast
 import bmesh
 import bpy
+import timeit
 
 from . assetreader import MeshAsset, HatAsset
 from . types import Part
@@ -82,14 +83,14 @@ def GetTotalVertices(file: BufferedReader):
     if (tmp_byte.decode() == "\n"):
         pass
     else:
-        file.read(1) # CR LF
+        file.read(1)
     byte_array = bytearray()
     while True:
         tmp_byte = file.read(1)
-        if (tmp_byte.decode() == "\r"): # CR LF
+        if (tmp_byte == b"\r"):
             file.read(1)
             break
-        elif (tmp_byte.decode() == "\n"):
+        elif (tmp_byte == b"\n"):
             break
         else:
             byte_array.extend(tmp_byte)
@@ -100,11 +101,13 @@ def GetBracketArray(file: BufferedReader):
     byte_array = bytearray()
     while True:
         tmp_byte = file.read(1)
-        if (tmp_byte.decode() == "]"):
+        if (tmp_byte == b"]"):
             byte_array.extend(tmp_byte)
             break
         else:
             byte_array.extend(tmp_byte)
+
+    # slow, we need to write our own parser
     bracket_array = ast.literal_eval(byte_array.decode('ascii'))
     return(bracket_array)
 
@@ -159,6 +162,7 @@ def MeshReader(file: BufferedReader):
     if (mesh_version <= 1.99):
         num_verts = GetTotalVertices(file) * 3
         
+        start = timeit.default_timer()
         for _ in range(num_verts):
             position = GetBracketArray(file)
             vertex_positions.append(position)
@@ -168,6 +172,7 @@ def MeshReader(file: BufferedReader):
             
             uv = GetBracketArray(file)[:-1] # we only need x and y
             vertex_uvs.append(uv)
+        stop = timeit.default_timer(); print("mesh done:", stop - start)
         
         return MeshData(vertex_positions, vertex_faces, vertex_uvs, vertex_normals, vertex_lods, mesh_version)
 
@@ -232,6 +237,7 @@ def GetMeshData(data):
 
 def GetMeshFromMeshData(data: MeshAsset, part: Part):
     mesh_data = GetMeshData(data.mesh_content)
+    
     mesh_name = 'Mesh_' + str(mesh_data.version)
     mesh = bpy.data.meshes.new('mesh')
     
