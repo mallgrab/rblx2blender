@@ -80,7 +80,6 @@ class AssetRequester(object):
         mesh_content = io.BytesIO(asset)
         
         mesh_asset = MeshAsset(mesh_content, mesh_id)
-        
         mesh = GetMeshFromMeshData(mesh_asset, part)
         return mesh
     
