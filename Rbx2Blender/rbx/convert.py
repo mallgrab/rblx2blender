@@ -57,8 +57,6 @@ def CreateMaterial(r, g, b):
     return mat
 
 def CreateMaterialFromBytes(data: bytes, texture_name: str):
-
-    asset_name = AssetRequester.asset_dir + "/" + texture_name
     file = None
 
     for directory_file in glob.glob(AssetRequester.asset_dir + "/" + texture_name + ".*"):
@@ -463,11 +461,7 @@ class StartConverting(bpy.types.Operator):
             if part.meshes:
                 mesh = AssetRequester.GetMeshFromId(part.meshes[0], part)
                 if part.mesh_textures:
-                    start = timeit.default_timer()
                     mesh_texture = AssetRequester.GetAssetFromLink(AssetRequester.roblox_asset_api_url + part.mesh_textures[0]).content
-                    stop = timeit.default_timer()
-                    print("mesh done:", stop - start)
-                    
                     texture_name = "tex_" + str(part.mesh_textures[0])
                     mesh.materials.append(CreateMaterialFromBytes(mesh_texture, texture_name))
                 continue
