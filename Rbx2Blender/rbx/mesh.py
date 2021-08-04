@@ -102,6 +102,8 @@ def GetBracketArray(file: BufferedReader):
     numbers = []
     while True:
         tmp_byte = file.read(1)
+        
+        # We could try to use a dict instead of if statements, maybe its faster?
         if tmp_byte == b"[":
             continue
         if tmp_byte == b",":
@@ -175,7 +177,7 @@ def MeshReader(file: BufferedReader):
             uv = GetBracketArray(file)[:-1] # we only need x and y
             vertex_uvs.append(uv)
         stop = timeit.default_timer(); print("mesh done:", stop - start)
-        
+
         return MeshData(vertex_positions, vertex_faces, vertex_uvs, vertex_normals, vertex_lods, mesh_version)
 
     mesh_header = GetHeaderInformation(file, mesh_version)
