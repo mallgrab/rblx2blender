@@ -25,7 +25,8 @@ import glob
 import xml.etree.ElementTree as ET
 
 # debug
-import timeit
+import cProfile
+import pstats
 
 class RbxPartContainer(object):
     PartsList = []
@@ -400,12 +401,18 @@ class StartConverting(bpy.types.Operator):
     bl_label = "Start Converting"
 
     def execute(self, context):
+        cProfile.runctx("self.ConvertProcess(context)", globals(), locals(), "rbx_performance.prof")
+        p = pstats.Stats("rbx_performance.prof")
+        p.sort_stats("tottime").print_stats(5)
+        return {'FINISHED'}
+
+    def ConvertProcess(self, context: bpy.types.Context):
         bpyscene = context.scene
 
         roblox_place_file = bpyscene.Place_Path.file_path
         roblox_install_directory = bpyscene.Install_Path.file_path
         place_name = os.path.splitext(os.path.basename(roblox_place_file))[0]
-        
+
         asset_dir = "placeassets" + "/" + place_name + "_assets"
         TextureList = []
 
@@ -422,22 +429,16 @@ class StartConverting(bpy.types.Operator):
 
         if not os.path.exists("placeassets"):
             os.mkdir("placeassets")
-        
+
         if not os.path.exists(asset_dir):
             os.mkdir(asset_dir)
 
-        start_convert = timeit.default_timer()
-        start_data = timeit.default_timer()
-        
         AssetRequester.asset_dir = asset_dir
         AssetRequester.place_name = place_name
         AssetRequester.roblox_install_directory = roblox_install_directory
         AssetRequester.local_texture_id = 0
-        
+
         GetDataFromPlace(roblox_place_file)
-        
-        end_data = timeit.default_timer()
-        print("data done:", end_data - start_data)
 
         # If place has textures fill up TextureList.
         if os.path.exists(asset_dir):
@@ -598,13 +599,10 @@ class StartConverting(bpy.types.Operator):
                                     else:
                                         continue
                 bm.to_mesh(brick.mesh)
-        
+
         # Testing
         # asset_mesh = AssetRequester.GetMeshFromAsset("https://assetdelivery.roblox.com/v1/assetId/4771632715")
         # mesh = GetMeshFromMeshData(asset_mesh)
         # mesh.materials.append(CreateMaterialFromBytes(asset_mesh, asset_dir))
-        
-        stop_convert = timeit.default_timer()
-        print("done", stop_convert - start_convert)
-        return {'FINISHED'}
+        #return {'FINISHED'}
 

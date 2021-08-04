@@ -5,7 +5,6 @@ import struct
 import ast
 import bmesh
 import bpy
-import timeit
 
 from . assetreader import MeshAsset, HatAsset
 from . types import Part
@@ -166,7 +165,6 @@ def MeshReader(file: BufferedReader):
     if (mesh_version <= 1.99):
         num_verts = GetTotalVertices(file) * 3
 
-        start = timeit.default_timer()
         for _ in range(num_verts):
             position = GetBracketArray(file)
             vertex_positions.append(position)
@@ -176,7 +174,6 @@ def MeshReader(file: BufferedReader):
             
             uv = GetBracketArray(file)[:-1] # we only need x and y
             vertex_uvs.append(uv)
-        stop = timeit.default_timer(); print("mesh done:", stop - start)
 
         return MeshData(vertex_positions, vertex_faces, vertex_uvs, vertex_normals, vertex_lods, mesh_version)
 
