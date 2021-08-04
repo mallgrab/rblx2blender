@@ -9,6 +9,7 @@ __pycache__/
 .vscode/
 .history/
 *.lock
+*.prof
 
 # Distribution / packaging
 .Python
