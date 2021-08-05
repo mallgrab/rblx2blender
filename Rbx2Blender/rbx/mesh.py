@@ -1,10 +1,11 @@
-from io import BufferedReader, BytesIO
+from io import BufferedReader, BytesIO, StringIO
 from array import array
 
 import struct
 import ast
 import bmesh
 import bpy
+import json
 
 from . assetreader import MeshAsset, HatAsset
 from . types import Part
@@ -165,6 +166,25 @@ def MeshReader(file: BufferedReader):
     if (mesh_version <= 1.99):
         num_verts = GetTotalVertices(file) * 3
 
+        """
+        byte_array = bytearray()
+        numbers = []
+        while True:
+            tmp_byte = file.read(1)
+
+            # We could try to use a dict instead of if statements, maybe its faster?
+            if tmp_byte == b"[":
+                continue
+            if tmp_byte == b",":
+                numbers.append(float(byte_array.decode('ascii')))
+                byte_array.clear()
+            elif tmp_byte == b"]":
+                numbers.append(float(byte_array.decode('ascii')))
+                return numbers
+            else:
+                byte_array.extend(tmp_byte)
+        """
+        """
         for _ in range(num_verts):
             position = GetBracketArray(file)
             vertex_positions.append(position)
@@ -174,6 +194,55 @@ def MeshReader(file: BufferedReader):
             
             uv = GetBracketArray(file)[:-1] # we only need x and y
             vertex_uvs.append(uv)
+
+        """
+        byte_str = file.read()
+        text_obj = byte_str.decode('UTF-8')  # Or use the encoding you expect
+        _file = StringIO(text_obj)
+
+        counter = 0
+        for _ in range(num_verts):
+            # we still have verts left in text_obj??
+            if counter == num_verts-1:
+                break
+            
+            inx = text_obj.find("]") + 1
+            text_obj = text_obj[inx:]
+            _e = _file.read(inx)
+            _v = json.loads(_e)
+            counter += 1
+            _type = counter % 3
+            if _type == 1:
+                vertex_positions.append(_v)
+            if _type == 2:
+                vertex_normals.append(_v)
+            if _type == 3:
+                vertex_uvs.append(_v)[:-1]
+
+
+        """
+        for _ in range(len(text_obj)):
+            tmp = _file.read(1)
+            if tmp == "[":
+                continue
+            elif tmp == ",":
+                numbers.append(float(tmp_num))
+                tmp_num = ""
+            elif tmp == "]":
+                numbers.append(float(tmp_num))
+                all_numbers.append(numbers)
+                numbers = []
+                tmp_num = ""
+            else:
+                tmp_num += tmp
+        
+        counter = 0
+        for index in range(int(len(all_numbers)/3)):
+            vertex_positions.append(all_numbers[counter])
+            vertex_normals.append(all_numbers[counter+1])
+            vertex_uvs.append(all_numbers[counter+2][:-1])
+            counter += 3
+        """
 
         return MeshData(vertex_positions, vertex_faces, vertex_uvs, vertex_normals, vertex_lods, mesh_version)
 
