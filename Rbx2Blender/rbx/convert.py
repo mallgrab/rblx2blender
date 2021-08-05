@@ -400,7 +400,7 @@ class StartConverting(bpy.types.Operator):
     bl_idname = "scene.button_operator_convert"
     bl_label = "Start Converting"
 
-    def execute(self, context):
+    def execute(self, context: bpy.types.Context):
         cProfile.runctx("self.ConvertProcess(context)", globals(), locals(), "rbx_performance.prof")
         p = pstats.Stats("rbx_performance.prof")
         p.sort_stats("tottime").print_stats(5)
@@ -408,6 +408,9 @@ class StartConverting(bpy.types.Operator):
 
     def ConvertProcess(self, context: bpy.types.Context):
         bpyscene = context.scene
+
+        # https://docs.blender.org/api/current/bpy.types.WindowManager.html?highlight=progress_begin#bpy.types.WindowManager.progress_begin
+        context.window_manager.progress_begin(0, 10)
 
         roblox_place_file = bpyscene.Place_Path.file_path
         roblox_install_directory = bpyscene.Install_Path.file_path
