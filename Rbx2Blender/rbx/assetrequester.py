@@ -10,7 +10,7 @@ import xml.etree.ElementTree as ET
 
 from . types import TileUV, Part, Texture
 from . assetreader import HatXMLAssetReader, HatBinaryAssetReader, HatAssetContent, HatAsset, HatAssetIds, MeshAsset
-from . mesh import GetMeshFromMeshData
+from . meshreader import MeshReader
 
 class AssetRequester(object):
     place_name = ""
@@ -36,8 +36,21 @@ class AssetRequester(object):
     @staticmethod
     def GetAssetFromId(asset_id: str):
         link = AssetRequester.roblox_asset_api_url + asset_id
-        asset = AssetRequester.GetAssetFromLink(link)
-        return asset.content
+        local_asset_path = AssetRequester.asset_dir + "/" + asset_id
+        
+        file = ""
+        for directory_file in glob.glob(os.path.abspath(local_asset_path)):
+            file = directory_file
+
+        # Don't download the same asset again if we already have it locally.
+        if not os.path.exists(file):
+            asset_file = AssetRequester.GetAssetFromLink(link)
+            open('tmp', 'wb').write(asset_file.content)
+            os.rename(r'tmp',r'' + asset_id)
+            shutil.move(asset_id, AssetRequester.asset_dir)
+        
+        asset_path = os.path.abspath(local_asset_path)
+        return asset_path
 
     @staticmethod
     def GetAssetId(id: str):
@@ -45,8 +58,11 @@ class AssetRequester(object):
             asset_id = id.replace('rbxassetid://', '')
         elif id.find('http://www.roblox.com/asset/?id=') > -1:
             asset_id = id.replace('http://www.roblox.com/asset/?id=', '')
+        elif id.isdecimal():
+            asset_id = id
         else:
             asset_id = None
+        
         return asset_id
 
     @staticmethod
@@ -76,12 +92,13 @@ class AssetRequester(object):
     @staticmethod
     # add extra arguments to create a blender mesh at xyz pos and hw scale
     def GetMeshFromId(id: str, part: Part):
-        asset = AssetRequester.GetAssetFromId(id)
+        #asset = AssetRequester.GetAssetFromId(id)
+        #mesh_content = io.BytesIO(asset)
         mesh_id = AssetRequester.GetAssetId(id)
-        mesh_content = io.BytesIO(asset)
+        mesh_content = AssetRequester.GetAssetFromId(id)
         
         mesh_asset = MeshAsset(mesh_content, mesh_id)
-        mesh = GetMeshFromMeshData(mesh_asset, part)
+        mesh = MeshReader.GetMeshFromMeshData(mesh_asset, part)
         return mesh
     
     @staticmethod
