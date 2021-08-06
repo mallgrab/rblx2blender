@@ -19,6 +19,7 @@ class AssetRequester(object):
     local_texture_id = 0
     roblox_asset_api_url = "https://assetdelivery.roblox.com/v1/assetId/"
 
+    # multithread this since we can gather a whole list of asset id's then use worker threads
     @staticmethod
     def GetAssetFromLink(link: str):
         asset = requests.get(link)
