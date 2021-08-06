@@ -2,8 +2,11 @@ Version 4
 5917433699
 
 Version 3
-4771632715
+hat: 4771632715
+meshid: 4849770433
+textureid: 4849771459
 
 Version 1
-1091572
-
+hat: 1091572
+meshid: 1090446
+textureid: 1090447
