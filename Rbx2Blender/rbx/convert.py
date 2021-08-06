@@ -9,7 +9,7 @@ from typing import List
 from . legacycolors import BrickColor
 from . assetreader import MeshAsset, HatAsset
 from . assetrequester import AssetRequester
-from . mesh import GetMeshFromMeshData
+from . meshreader import MeshReader
 from . types import *
 
 import mathutils
@@ -465,6 +465,9 @@ class StartConverting(bpy.types.Operator):
             if part.meshes:
                 mesh = AssetRequester.GetMeshFromId(part.meshes[0], part)
                 if part.mesh_textures:
+                    _dd = AssetRequester.roblox_asset_api_url + part.mesh_textures[0]
+                    # we already have AssetRequester.GetOnlineTexture that has checks if texture already exists
+                    # refactor this for performance gain
                     mesh_texture = AssetRequester.GetAssetFromLink(AssetRequester.roblox_asset_api_url + part.mesh_textures[0]).content
                     texture_name = "tex_" + str(part.mesh_textures[0])
                     mesh.materials.append(CreateMaterialFromBytes(mesh_texture, texture_name))
