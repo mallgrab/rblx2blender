@@ -7,9 +7,8 @@ from xml.etree.ElementTree import Element
 from typing import List
 
 from . legacycolors import BrickColor
-from . assetreader import MeshAsset, HatAsset
 from . assetrequester import AssetRequester
-from . meshreader import MeshReader
+from . assetcaching import AssetCaching
 from . types import *
 
 import mathutils
@@ -347,9 +346,11 @@ def GetDataFromPlace(roblox_place_file):
                         if element.tag == 'url':
                             if parent_element[-1].attrib.get('name') == 'MeshId':
                                 mesh_id = AssetRequester.GetAssetId(element.text)
+                                AssetCaching.asset_ids.append(mesh_id)
                                 nested_parts[-1].meshes.append(mesh_id)
                             elif parent_element[-1].attrib.get('name') == 'TextureId':
                                 texture_id = AssetRequester.GetAssetId(element.text)
+                                AssetCaching.asset_ids.append(texture_id)
                                 nested_parts[-1].mesh_textures.append(texture_id)
 
                 if parent_element[1].attrib.get('class') == 'Decal':
@@ -442,6 +443,12 @@ class StartConverting(bpy.types.Operator):
         AssetRequester.local_texture_id = 0
 
         GetDataFromPlace(roblox_place_file)
+
+        # Remove duplicated assets
+        # Check if asset exists already remove if it does
+        # GetAssetFromId the list
+        # When it all works use worker threads to speed stuff up because ssl read is slow
+        # AssetCaching.PrefetchAssets()
 
         # If place has textures fill up TextureList.
         if os.path.exists(asset_dir):
