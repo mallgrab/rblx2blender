@@ -291,7 +291,8 @@ class MeshReader(object):
 
         if (mesh_data.version <= 1.99):
             idx = 0
-            while idx < len(mesh_data.vertex_positions):
+            total_vertex_positions = len(mesh_data.vertex_positions)
+            while idx < total_vertex_positions:
                 t_v1 = bm.verts.new(mesh_data.vertex_positions[idx])
                 t_v2 = bm.verts.new(mesh_data.vertex_positions[idx+1])
                 t_v3 = bm.verts.new(mesh_data.vertex_positions[idx+2])
