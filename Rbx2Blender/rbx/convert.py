@@ -438,8 +438,6 @@ class StartConverting(bpy.types.Operator):
 
         GetDataFromPlace(roblox_place_file)
 
-        # Remove duplicated assets
-        # Check if asset exists already remove if it does
         # GetAssetFromId the list
         # When it all works use worker threads to speed stuff up because ssl read is slow
         AssetCaching.PrefetchAssets()
