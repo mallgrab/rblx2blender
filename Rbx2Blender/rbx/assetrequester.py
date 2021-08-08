@@ -92,8 +92,6 @@ class AssetRequester(object):
     @staticmethod
     # add extra arguments to create a blender mesh at xyz pos and hw scale
     def GetMeshFromId(id: str, part: Part):
-        #asset = AssetRequester.GetAssetFromId(id)
-        #mesh_content = io.BytesIO(asset)
         mesh_id = AssetRequester.GetAssetId(id)
         mesh_content = AssetRequester.GetAssetFromId(id)
         
