@@ -1,8 +1,4 @@
-from copy import deepcopy
-from math import radians, degrees
-from typing import NamedTuple
-from collections import namedtuple
-from io import BytesIO
+from math import radians
 from xml.etree.ElementTree import Element
 from typing import List
 
@@ -15,10 +11,8 @@ import mathutils
 import bmesh
 import bpy
 import os
-import base64
 import hashlib
 import imghdr
-import re
 import shutil
 import glob
 import xml.etree.ElementTree as ET
