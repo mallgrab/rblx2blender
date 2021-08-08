@@ -70,7 +70,7 @@ def CreateMaterialFromBytes(data: bytes, texture_name: str):
         shutil.move(texture_name, AssetRequester.asset_dir)
         texture_path = os.path.abspath(AssetRequester.asset_dir + "/" + texture_name)
     else:
-        texture_path =  os.path.abspath(file)
+        texture_path = os.path.abspath(file)
 
     return CreateMaterialWithTexture(texture_path)
 
@@ -404,7 +404,7 @@ class StartConverting(bpy.types.Operator):
     def execute(self, context: bpy.types.Context):
         cProfile.runctx("self.ConvertProcess(context)", globals(), locals(), "rbx_performance.prof")
         p = pstats.Stats("rbx_performance.prof")
-        p.sort_stats("tottime").print_stats(5)
+        p.sort_stats("tottime").print_stats(10)
         return {'FINISHED'}
 
     def ConvertProcess(self, context: bpy.types.Context):
@@ -448,7 +448,7 @@ class StartConverting(bpy.types.Operator):
         # Check if asset exists already remove if it does
         # GetAssetFromId the list
         # When it all works use worker threads to speed stuff up because ssl read is slow
-        # AssetCaching.PrefetchAssets()
+        AssetCaching.PrefetchAssets()
 
         # If place has textures fill up TextureList.
         if os.path.exists(asset_dir):
@@ -472,12 +472,9 @@ class StartConverting(bpy.types.Operator):
             if part.meshes:
                 mesh = AssetRequester.GetMeshFromId(part.meshes[0], part)
                 if part.mesh_textures:
-                    _dd = AssetRequester.roblox_asset_api_url + part.mesh_textures[0]
-                    # we already have AssetRequester.GetOnlineTexture that has checks if texture already exists
-                    # refactor this for performance gain
-                    mesh_texture = AssetRequester.GetAssetFromLink(AssetRequester.roblox_asset_api_url + part.mesh_textures[0]).content
-                    texture_name = "tex_" + str(part.mesh_textures[0])
-                    mesh.materials.append(CreateMaterialFromBytes(mesh_texture, texture_name))
+                    mesh_texture_path = AssetRequester.GetAssetFromId(part.mesh_textures[0])
+                    mesh_material = CreateMaterialWithTexture(mesh_texture_path)
+                    mesh.materials.append(mesh_material)
                 continue
             CreatePart(part, place_file_rbxlx)
 
