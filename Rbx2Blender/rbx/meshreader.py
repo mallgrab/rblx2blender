@@ -7,7 +7,8 @@ import ast
 import bmesh
 import bpy
 import json
-#import orjson as json
+# import orjson as json
+# https://b3d.interplanety.org/en/how-to-install-required-packages-to-the-blender-python-with-pip/
 
 from . assetreader import MeshAsset, HatAsset
 from . types import Part
