@@ -607,10 +607,3 @@ class StartConverting(bpy.types.Operator):
                                     else:
                                         continue
                 bm.to_mesh(brick.mesh)
-
-        # Testing
-        # asset_mesh = AssetRequester.GetMeshFromAsset("https://assetdelivery.roblox.com/v1/assetId/4771632715")
-        # mesh = GetMeshFromMeshData(asset_mesh)
-        # mesh.materials.append(CreateMaterialFromBytes(asset_mesh, asset_dir))
-        #return {'FINISHED'}
-
