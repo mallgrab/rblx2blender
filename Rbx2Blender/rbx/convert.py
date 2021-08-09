@@ -4,7 +4,7 @@ from typing import List
 
 from . legacycolors import BrickColor
 from . assetrequester import AssetRequester
-from . assetcaching import AssetCaching
+from . assetcaching import AssetCaching, Asset
 from . types import *
 
 import mathutils
@@ -340,11 +340,12 @@ def GetDataFromPlace(roblox_place_file):
                         if element.tag == 'url':
                             if parent_element[-1].attrib.get('name') == 'MeshId':
                                 mesh_id = AssetRequester.GetAssetId(element.text)
-                                AssetCaching.asset_ids.append(mesh_id)
+                                AssetCaching.assets.append(Asset(mesh_id, "mesh"))
                                 nested_parts[-1].meshes.append(mesh_id)
+                                
                             elif parent_element[-1].attrib.get('name') == 'TextureId':
                                 texture_id = AssetRequester.GetAssetId(element.text)
-                                AssetCaching.asset_ids.append(texture_id)
+                                AssetCaching.assets.append(Asset(texture_id, "texture"))
                                 nested_parts[-1].mesh_textures.append(texture_id)
 
                 if parent_element[1].attrib.get('class') == 'Decal':
@@ -354,12 +355,15 @@ def GetDataFromPlace(roblox_place_file):
                         elif event == 'end':
                             parent_element.pop()
                         
-                    
                     if event == 'end':
                         if element.get('name') == 'Face':
                             face_index = GetFaceIndex(int(element.text))
+                        
                         if element.tag == 'hash' or element.tag == 'url':
+                            texture_id = AssetRequester.GetAssetId(element.text)
+                            AssetCaching.assets.append(Asset(texture_id, "texture"))
                             AssetRequester.GetOnlineTexture(element.text, face_index, nested_parts[0], 'Decal', TileUV(None, None))
+
                         if element.tag == 'binary':
                             AssetRequester.GetLocalTexture(element.text, face_index, nested_parts[0], 'Decal')
 
@@ -385,6 +389,8 @@ def GetDataFromPlace(roblox_place_file):
                             face_index = GetFaceIndex(int(element.text))
                         
                         if element.tag == 'url':
+                            texture_id = AssetRequester.GetAssetId(element.text)
+                            AssetCaching.assets.append(Asset(texture_id, "texture"))
                             AssetRequester.GetOnlineTexture(element.text, face_index, nested_parts[0], 'Texture', TileUV(TileU, TileV))
                         elif element.tag == 'hash':
                             TextureDuplicated(element.text, face_index, nested_parts[0])

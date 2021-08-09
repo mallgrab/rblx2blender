@@ -52,6 +52,7 @@ class AssetRequester(object):
         asset_path = os.path.abspath(local_asset_path)
         return asset_path
 
+    # asset_id = re.sub(r'[^0-9]+', '', link.lower())
     @staticmethod
     def GetAssetId(id: str):
         if id.find('rbxassetid://') > -1:
