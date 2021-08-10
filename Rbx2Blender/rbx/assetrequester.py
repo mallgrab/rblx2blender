@@ -52,18 +52,9 @@ class AssetRequester(object):
         asset_path = os.path.abspath(local_asset_path)
         return asset_path
 
-    # asset_id = re.sub(r'[^0-9]+', '', link.lower())
     @staticmethod
     def GetAssetId(id: str):
-        if id.find('rbxassetid://') > -1:
-            asset_id = id.replace('rbxassetid://', '')
-        elif id.find('http://www.roblox.com/asset/?id=') > -1:
-            asset_id = id.replace('http://www.roblox.com/asset/?id=', '')
-        elif id.isdecimal():
-            asset_id = id
-        else:
-            asset_id = None
-        
+        asset_id = re.sub(r'[^0-9]+', '', id.lower())
         return asset_id
 
     @staticmethod
