@@ -23,11 +23,16 @@ class AssetCaching(object):
         asset_set = list(set(AssetCaching.assets))
 
         AssetCaching.assets = list(set(AssetCaching.assets))
-        local_assets = glob.glob(os.path.abspath(AssetRequester.asset_dir + "/*"))
-        
-        # Remove assets that we already have locally
-        for index, file in enumerate(local_assets):
-            local_assets[index] = os.path.basename(file)
+        cached_asset_ids = [os.path.basename(asset) for asset in glob.glob(AssetRequester.asset_dir + "/*")]
 
-        # Return assets that don't exist in both local_assets and asset_ids
-        request_assets = list(reduce(lambda x,y : filter(lambda z: z!=y,x), AssetCaching.assets, local_assets))
+        # remove binary textures
+        for index, asset_id in enumerate(cached_asset_ids):
+            if asset_id.find("tex_") > -1:
+                cached_asset_ids.pop(index)
+            elif asset_id.split(".")[1]:
+                cached_asset_ids[index] = asset_id.split(".")[0]
+
+        print("done")
+
+        # Remove duplicates
+        # request_assets = list(reduce(lambda x,y : filter(lambda z: z!=y,x), AssetCaching.assets, local_assets))
