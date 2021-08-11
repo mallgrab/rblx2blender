@@ -29,8 +29,20 @@ class AssetCaching(object):
         for index, asset_id in enumerate(cached_asset_ids):
             if asset_id.find("tex_") > -1:
                 cached_asset_ids.pop(index)
-            elif asset_id.split(".")[1]:
-                cached_asset_ids[index] = asset_id.split(".")[0]
+
+        # remove extension of local asset
+        for index, asset_id in enumerate(cached_asset_ids):
+            asset_id_split = asset_id.split(".")
+            if asset_id_split:
+                cached_asset_ids[index] = asset_id_split[0]
+        
+        asset: Asset
+        uncached_asset_ids = []
+
+        for asset in asset_set:
+            for asset_id in cached_asset_ids:
+                if asset.asset_id == asset_id:
+                    uncached_asset_ids.append(asset)
 
         print("done")
 
