@@ -5,7 +5,7 @@ from functools import reduce
 from . assetrequester import AssetRequester
 
 class Asset(object):
-    def __init__(self, asset_id: int, asset_type: str):
+    def __init__(self, asset_id: str, asset_type: str):
         self.asset_id = asset_id
         self.asset_type = asset_type
     
@@ -35,16 +35,12 @@ class AssetCaching(object):
             asset_id_split = asset_id.split(".")
             if asset_id_split:
                 cached_asset_ids[index] = asset_id_split[0]
-        
-        asset: Asset
-        uncached_asset_ids = []
 
+
+        cached_asset_set = []
         for asset in asset_set:
             for asset_id in cached_asset_ids:
                 if asset.asset_id == asset_id:
-                    uncached_asset_ids.append(asset)
-
-        print("done")
-
-        # Remove duplicates
-        # request_assets = list(reduce(lambda x,y : filter(lambda z: z!=y,x), AssetCaching.assets, local_assets))
+                    cached_asset_set.append(asset)
+        
+        uncached_assets = list(reduce(lambda x,y : filter(lambda z: z!=y,x), cached_asset_set, asset_set))
