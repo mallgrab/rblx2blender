@@ -44,3 +44,12 @@ class AssetCaching(object):
                     cached_asset_set.append(asset)
         
         uncached_assets = list(reduce(lambda x,y : filter(lambda z: z!=y,x), cached_asset_set, asset_set))
+
+        asset: Asset
+        for asset in uncached_assets:
+            if asset.asset_type == "mesh":
+                AssetRequester.GetAssetFromId(asset.asset_id)
+            if asset.asset_type == "texture":
+                AssetRequester.GetOnlineTexture(asset.asset_id)
+        
+        _v = uncached_assets

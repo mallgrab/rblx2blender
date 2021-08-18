@@ -111,7 +111,7 @@ class AssetRequester(object):
         part.textures.append(Texture(texture_directory, face_index, type, TileUV(None, None)))
 
     @staticmethod
-    def GetOnlineTexture(link: str, face_index: int, part: Part, type: str, tile_uv: TileUV):
+    def GetOnlineTexture(link: str):
         asset_id = re.sub(r'[^0-9]+', '', link.lower())
         local_asset = False
 
@@ -139,4 +139,4 @@ class AssetRequester(object):
                 asset_filename = os.path.basename(file)
             
             texture_directory = os.path.abspath(AssetRequester.asset_dir + "/" + asset_filename)
-            part.textures.append(Texture(texture_directory, face_index, type, tile_uv))
+            return texture_directory

@@ -362,7 +362,9 @@ def GetDataFromPlace(roblox_place_file):
                         if element.tag == 'hash' or element.tag == 'url':
                             texture_id = AssetRequester.GetAssetId(element.text)
                             AssetCaching.assets.append(Asset(texture_id, "texture"))
-                            AssetRequester.GetOnlineTexture(element.text, face_index, nested_parts[0], 'Decal', TileUV(None, None))
+                            texture_directory = AssetRequester.GetOnlineTexture(element.text)
+                            texture = Texture(texture_directory, face_index, 'Decal', TileUV(None, None))
+                            nested_parts[0].textures.append(texture)
 
                         if element.tag == 'binary':
                             AssetRequester.GetLocalTexture(element.text, face_index, nested_parts[0], 'Decal')
@@ -391,7 +393,10 @@ def GetDataFromPlace(roblox_place_file):
                         if element.tag == 'url':
                             texture_id = AssetRequester.GetAssetId(element.text)
                             AssetCaching.assets.append(Asset(texture_id, "texture"))
-                            AssetRequester.GetOnlineTexture(element.text, face_index, nested_parts[0], 'Texture', TileUV(TileU, TileV))
+                            texture_directory = AssetRequester.GetOnlineTexture(element.text)
+                            texture = Texture(texture_directory, face_index, 'Texture', TileUV(TileU, TileV))
+                            nested_parts[0].textures.append(texture)
+                            
                         elif element.tag == 'hash':
                             TextureDuplicated(element.text, face_index, nested_parts[0])
                         elif element.tag == 'binary':
@@ -441,6 +446,7 @@ class StartConverting(bpy.types.Operator):
         AssetRequester.place_name = place_name
         AssetRequester.roblox_install_directory = roblox_install_directory
         AssetRequester.local_texture_id = 0
+        AssetCaching.assets = []
 
         GetDataFromPlace(roblox_place_file)
 
@@ -470,7 +476,7 @@ class StartConverting(bpy.types.Operator):
             if part.meshes:
                 mesh = AssetRequester.GetMeshFromId(part.meshes[0], part)
                 if part.mesh_textures:
-                    mesh_texture_path = AssetRequester.GetAssetFromId(part.mesh_textures[0])
+                    mesh_texture_path = AssetRequester.GetOnlineTexture(part.mesh_textures[0])
                     mesh_material = CreateMaterialWithTexture(mesh_texture_path)
                     mesh.materials.append(mesh_material)
                 continue
