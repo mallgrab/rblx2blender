@@ -7,6 +7,7 @@ import ast
 import bmesh
 import bpy
 import json
+import mathutils
 # import orjson as json
 # https://b3d.interplanety.org/en/how-to-install-required-packages-to-the-blender-python-with-pip/
 
@@ -334,6 +335,8 @@ class MeshReader(object):
                     current_vertex_uv = mesh_data.vertex_uvs[face_data[vertex_idx]]
                     loop_uv = loop[uv_layer]
                     loop_uv.uv = current_vertex_uv
+
+        bmesh.ops.rotate(bm, matrix=mathutils.Euler(part.rotation, 'XYZ').to_matrix(), verts=bm.verts)
 
         bm.to_mesh(mesh)
         bm.free()
