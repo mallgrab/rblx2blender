@@ -1,13 +1,20 @@
-### Apply material to face of part
-- [ ] Edit face uv's depending on if its a decal or texture.
-- [ ] While face is selected assign the material to it.
+#### Add remainder of Part types
+- [ ] Truss
+- [ ] Wedge
 
-### Check if part contains mesh.
-- [ ] Only care about the first mesh inside of the part.
-  - [ ] Download mesh (asset).
-  - [ ] If mesh uses texture
-    - [ ] Download texture.
-    - [ ] Apply texture to the mesh.
+### Add remainder of SpecialMesh types
+- [ ] Brick
+- [ ] Cylinder
+- [ ] Head
+- [ ] Sphere
+- [ ] Wedge
+- [ ] Torso
+
+### Check if part uses transparency.
+- [ ] If true change alpha on the material so its roughly the same as ingame.
+
+### Add support for CSG
+  Might have to check source code of other roblox conversion projects / forum threads
 
 ### Group stuff depending on if they are inside models.
 - [ ] Group support for fbx does not exist, but with blender we could create either collections or join parts.
@@ -17,6 +24,3 @@
 - [ ] Join objects based on same material.
     #### You won't be able to interact with the scene anymore, moving objects etc.
     #### Good for draw calls & performance.
-
-### Check if part uses transparency.
-- [ ] If true change alpha on the material so its roughly the same as ingame.
