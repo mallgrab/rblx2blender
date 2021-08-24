@@ -1,4 +1,4 @@
-#### Add remainder of Part types
+### Add remainder of Part types
 - [ ] Truss
 - [ ] Wedge
 
