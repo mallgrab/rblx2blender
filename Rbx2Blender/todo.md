@@ -1,5 +1,8 @@
 ### Add remainder of Part types
 - [ ] Truss
+  - [ ] Alternating Supports
+  - [ ] Bridge Style Supports
+  - [ ] No Supports
 - [ ] Wedge
 
 ### Add remainder of SpecialMesh types
