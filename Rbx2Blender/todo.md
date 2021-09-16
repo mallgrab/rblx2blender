@@ -14,7 +14,7 @@
 - [ ] If true change alpha on the material so its roughly the same as ingame.
 
 ### Add support for CSG
-  Might have to check source code of other roblox conversion projects / forum threads
+  [implementation info](csg_info.md)
 
 ### Group stuff depending on if they are inside models.
 - [ ] Group support for fbx does not exist, but with blender we could create either collections or join parts.
