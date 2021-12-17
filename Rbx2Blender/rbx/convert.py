@@ -135,6 +135,7 @@ def CreatePart(part: Part, place_file_rbxlx: bool):
         basic_cylinder = bpy.data.objects.new("Part_Cylinder", mesh)
         bpy.context.collection.objects.link(basic_cylinder)
         
+        # blender 3.0+ changed diameter1 to radius1
         bm = bmesh.new()
         bmesh.ops.create_cone(bm, cap_ends=True, cap_tris=False, segments=12, diameter1=0.5, diameter2=0.5, depth=0.5)
         
@@ -194,6 +195,7 @@ def CreatePart(part: Part, place_file_rbxlx: bool):
         bpy.context.collection.objects.link(basic_sphere)
         bm = bmesh.new()
         
+        # blender 3.0+ changed diameter to radius
         bmesh.ops.create_uvsphere(bm, u_segments=16, v_segments=8, diameter=0.5)
         bmesh.ops.scale(bm, vec=part.scale, verts=bm.verts)
         bmesh.ops.rotate(bm, matrix=mathutils.Euler(part.rotation, 'XYZ').to_matrix(), verts=bm.verts)
