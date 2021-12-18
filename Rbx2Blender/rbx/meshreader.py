@@ -1,9 +1,11 @@
 from io import BufferedReader, BytesIO, StringIO
 from array import array
 from functools import partial
+from timeit import default_timer as timer
 
 import struct
 import ast
+import sys
 import bmesh
 import bpy
 import json
@@ -184,20 +186,30 @@ class MeshReader(object):
             vertex_info = []
 
             counter = num_verts
-            for _ in range(counter):
-                for index in range(3):
-                    inx = text_obj.find("]") + 1
-                    text_obj = text_obj[inx:]
-                    _e = _file.read(inx)
-                    _v = json.loads(_e)
-                    #_v = list(map(float, _e.strip('][').replace('"', '').split(',')))
-                    vertex_info.append(_v)
-                
-                vertex_positions.append(vertex_info[0])
-                vertex_normals.append(vertex_info[1])
-                vertex_uvs.append(vertex_info[2][:-1])
-                vertex_info.clear()
-                
+
+            start = 0
+            end = 0
+
+            tmp_string = StringIO()
+            tmp_string.write("[")
+
+            end = text_obj.find("]", end+1)
+            tmp_string.write(text_obj[start:end+1])
+
+            for _ in range((num_verts*3)-1):
+                start = end
+                end = text_obj.find("]", start+1)
+                tmp_string.write("," + text_obj[start+1:end+1])
+
+            tmp_string.write("]")
+            tmp_string.seek(0)
+            json_result = json.loads(tmp_string.read())
+
+            for i in range(0, num_verts*3, 3):
+                vertex_positions.append(json_result[i])
+                vertex_normals.append(json_result[i+1])
+                vertex_uvs.append(json_result[i+2][:-1])
+            
             return MeshData(vertex_positions, vertex_faces, vertex_uvs, vertex_normals, vertex_lods, mesh_version)
 
         mesh_header = MeshReader.GetHeaderInformation(file, mesh_version)
