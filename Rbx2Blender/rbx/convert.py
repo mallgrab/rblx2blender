@@ -507,7 +507,8 @@ class StartConverting(bpy.types.Operator):
         for obj_scene in bpy.context.scene.objects:
             obj_scene.select_set(False)
 
-        bpy.ops.object.mode_set(mode='OBJECT')
+        # Complains for some reason on some places, bad if we disable it?
+        # bpy.ops.object.mode_set(mode='OBJECT')
 
         if RbxPartContainer.BrickList:
             brick: Brick
